@@ -2,9 +2,9 @@ import enums.IniEntryType
 import exceptions.InvalidTypeException
 
 class IniEntry {
-    private val key: String
-    private val value: Any?
-    private val type: IniEntryType
+    val key: String
+    val value: Any?
+    val type: IniEntryType
 
     @Throws(InvalidTypeException::class)
     constructor(
@@ -12,9 +12,6 @@ class IniEntry {
         value: Any?,
         type: IniEntryType,
     ) {
-        if (value == null) {
-            throw InvalidTypeException("Invalid type for IniEntry: null")
-        }
         when (value) {
             is IniValue -> { /* ok */ }
             is List<*> -> {
@@ -31,7 +28,7 @@ class IniEntry {
                     }
                 }
             }
-            else -> throw InvalidTypeException("Invalid type for IniEntry: ${value.javaClass}")
+            else -> throw InvalidTypeException("Invalid type for IniEntry: ${value?.javaClass}")
         }
         if (key.isEmpty()) {
             throw InvalidTypeException("Key cannot be empty")
@@ -87,7 +84,9 @@ class IniEntry {
             throw InvalidTypeException("Invalid type for RepeatedLineArray: $type")
         }
         return when (value) {
-            is List<*> -> value.joinToString("") { "$key=$it\n" }
+            is List<*> -> value
+                .filter { it != null && it.toString().isNotEmpty() }
+                .joinToString("\n") { "$key=$it" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for RepeatedLineArray: ${value::class.java}")
         }
@@ -99,11 +98,11 @@ class IniEntry {
             throw InvalidTypeException("Invalid type for IndexedArray: $type")
         }
         val parentKey = key
-        return when (value) {
-            is List<*> -> value.fold("") { acc, v -> if (v == null) acc else "$acc$parentKey[${value.indexOf(v)}]=$v\n" }
+        return (when (value) {
+            is List<*> -> value.fold("") { acc, v -> if (v == null || (v as IniValue).toString() == "") acc else "\n$acc$parentKey[${value.indexOf(v)}]=$v\n" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for IndexedArray: ${value::class.java}")
-        }
+        }).trim()
     }
 
     @Throws(InvalidTypeException::class)
@@ -112,7 +111,7 @@ class IniEntry {
             throw InvalidTypeException("Invalid type for Map: $type")
         }
         return when (value) {
-            is Map<*, *> -> value.entries.joinToString("") { "$key[${it.key}]=${it.value}\n" }
+            is Map<*, *> -> value.entries.joinToString("\n") { "$key[${it.key}]=${it.value}" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for Map: ${value::class.java}")
         }

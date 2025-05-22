@@ -1,6 +1,7 @@
 import enums.IniEntryType
 
 fun main() {
+    println("DIFFERENT ENTRIES")
     val plainCapitalizedBooleanEntry = IniEntry("PlainCapitalizedBoolean", IniValue(true), IniEntryType.Plain)
     println("PlainCapitalizedBooleanEntry:")
     println(plainCapitalizedBooleanEntry)
@@ -25,10 +26,25 @@ fun main() {
     val repeatedLineArrayEntry = IniEntry("RepeatedLineArray", listOf(IniValue("Hello"), IniValue("World")), IniEntryType.RepeatedLineArray)
     println("RepeatedLineArrayEntry:")
     println(repeatedLineArrayEntry)
-    val indexedArrayEntry = IniEntry("IndexedArray", listOf(IniValue(1), null, IniValue(2)), IniEntryType.IndexedArray)
+    val indexedArrayEntry = IniEntry("IndexedArray", listOf(IniValue(1), null, IniValue(2), null), IniEntryType.IndexedArray)
     println("IndexedArrayEntry:")
     println(indexedArrayEntry)
     val mapEntry = IniEntry("Map", mapOf("key1" to IniValue(1), "key2" to IniValue(2)), IniEntryType.Map)
     println("MapEntry:")
     println(mapEntry)
+
+    println("INI SECTION")
+    val iniSection = IniSection("TestSection")
+    iniSection.addKey("Key1", true)
+    iniSection.addKey("Key8", null as String?)
+    iniSection.addKey("Key2", 42)
+    iniSection.addKey("Key3", 3.14f)
+    iniSection.addKey("Key4", "Hello World")
+    iniSection.addKey("Key5", mapOf("key" to IniValue("value"), "key2" to mapOf("key3" to IniValue(24)).toIniValue()))
+    iniSection.addArrayKey("Key6", listOf(), IniEntryType.CommaSeparatedArray)
+    iniSection.addArrayKey("Key7", listOf(IniValue("Hello"), IniValue("World"), null), IniEntryType.RepeatedLineArray)
+    iniSection.addArrayKey("Key8", listOf(IniValue(1), IniValue(null as String?), IniValue(2), null), IniEntryType.IndexedArray)
+    iniSection.addMapKey("Key9", mapOf("key1" to IniValue(1), "key2" to IniValue(null as String?), "key3" to mapOf("structkey" to IniValue("structvalue"), "structkey2" to IniValue(true)).toIniValue()))
+
+    println(iniSection)
 }

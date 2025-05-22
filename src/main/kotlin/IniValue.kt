@@ -2,6 +2,7 @@ import enums.IniEntryType
 import enums.IniValueType
 import exceptions.InvalidTypeException
 
+
 class IniValue(
     private val value: Any?,
     private val type: IniValueType
@@ -14,7 +15,7 @@ class IniValue(
     )
     constructor(value: Int?) : this(value, IniValueType.Integer)
     constructor(value: Float?) : this(value, IniValueType.Float)
-    constructor(value: Map<String, IniValue>?) : this(value, IniValueType.Struct)
+    constructor(value: Struct?) : this(value, IniValueType.Struct)
 
     override fun toString(): String {
         return when (type) {
@@ -74,7 +75,7 @@ class IniValue(
     @Throws(InvalidTypeException::class)
     fun toStructString(): String {
         return when (value) {
-            is Map<*, *> -> value.entries.joinToString(", ", "(", ")") { "${it.key}=${it.value}" }
+            is Map<*, *> /* Struct */ -> value.entries.joinToString(", ", "(", ")") { "${it.key}=${it.value}" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for Struct: ${value::class.java}")
         }
