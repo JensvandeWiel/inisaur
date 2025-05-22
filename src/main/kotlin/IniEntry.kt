@@ -19,7 +19,7 @@ class IniEntry {
             is IniValue -> { /* ok */ }
             is List<*> -> {
                 value.forEach { v ->
-                    if (v !is IniValue) {
+                    if (v !is IniValue && v != null) {
                         throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
                     }
                 }
@@ -100,7 +100,7 @@ class IniEntry {
         }
         val parentKey = key
         return when (value) {
-            is List<*> -> value.mapIndexed { idx, item -> "$parentKey[$idx]=$item\n" }.joinToString("")
+            is List<*> -> value.fold("") { acc, v -> if (v == null) acc else "$acc$parentKey[${value.indexOf(v)}]=$v\n" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for IndexedArray: ${value::class.java}")
         }

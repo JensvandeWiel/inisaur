@@ -1,4 +1,3 @@
-import IniValue
 import enums.IniEntryType
 
 fun main() {
@@ -26,7 +25,7 @@ fun main() {
     val repeatedLineArrayEntry = IniEntry("RepeatedLineArray", listOf(IniValue("Hello"), IniValue("World")), IniEntryType.RepeatedLineArray)
     println("RepeatedLineArrayEntry:")
     println(repeatedLineArrayEntry)
-    val indexedArrayEntry = IniEntry("IndexedArray", listOf(IniValue(1), IniValue(2)), IniEntryType.IndexedArray)
+    val indexedArrayEntry = IniEntry("IndexedArray", listOf(IniValue(1), null, IniValue(2)), IniEntryType.IndexedArray)
     println("IndexedArrayEntry:")
     println(indexedArrayEntry)
     val mapEntry = IniEntry("Map", mapOf("key1" to IniValue(1), "key2" to IniValue(2)), IniEntryType.Map)
