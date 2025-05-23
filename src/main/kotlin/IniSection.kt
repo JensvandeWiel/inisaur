@@ -1,6 +1,4 @@
 import enums.IniEntryType
-import enums.IniValueType
-import java.security.Key
 
 class IniSection(
     val name: String,
@@ -50,37 +48,37 @@ class IniSection(
         entries.add(entry)
     }
 
-    suspend fun getBoolean(key: String): Boolean? {
+    suspend fun getBooleanKey(key: String): Boolean? {
         val entry = entries.find { it.key == key }
         return entry?.getBoolean()
     }
 
-    suspend fun getInteger(key: String): Int? {
+    suspend fun getIntegerKey(key: String): Int? {
         val entry = entries.find { it.key == key }
         return entry?.getInteger()
     }
 
-    suspend fun getFloat(key: String): Float? {
+    suspend fun getFloatKey(key: String): Float? {
         val entry = entries.find { it.key == key }
         return entry?.getFloat()
     }
 
-    suspend fun getString(key: String): String? {
+    suspend fun getStringKey(key: String): String? {
         val entry = entries.find { it.key == key }
         return entry?.getString()
     }
 
-    suspend fun getStruct(key: String): Map<String, Any?>? {
+    suspend fun getStructKey(key: String): Map<String, Any?>? {
         val entry = entries.find { it.key == key }
         return entry?.getStruct()
     }
 
-    suspend fun getArray(key: String): List<Any?>? {
+    suspend fun getArrayKey(key: String): List<Any?>? {
         val entry = entries.find { it.key == key }
         return entry?.getArrayValues()
     }
 
-    suspend fun getMap(key: String): Map<String, Any?>? {
+    suspend fun getMapKey(key: String): Map<String, Any?>? {
         val entry = entries.find { it.key == key }
         return entry?.getMapValues()
     }
