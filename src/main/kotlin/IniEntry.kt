@@ -18,23 +18,34 @@ class IniEntry {
                 if (type != IniEntryType.CommaSeparatedArray && type != IniEntryType.RepeatedLineArray && type != IniEntryType.IndexedArray) {
                     throw InvalidTypeException("Invalid type for IniEntry: $type")
                 }
-                value.forEach { v ->
-                    if (v !is IniValue) {
-                        throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
+                return value.map { v ->
+                    when (v) {
+                        is IniValue -> v
+                        is String -> IniValue(v)
+                        is Boolean -> IniValue(v)
+                        is Int -> IniValue(v)
+                        is Float -> IniValue(v)
+                        null -> IniValue(null as String?)
+                        else -> throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
                     }
-                }
-                return value.toMutableList()
+                }.toMutableList()
             }
             is Map<*, *>, is MutableMap<*, *> -> {
                 if (type != IniEntryType.Map) {
                     throw InvalidTypeException("Invalid type for IniEntry: $type")
                 }
-                value.forEach { entry ->
-                    if (entry.value !is IniValue) {
-                        throw InvalidTypeException("Invalid type for IniEntry: ${entry.value?.javaClass}")
+
+                return value.mapValues { entry ->
+                    when (val v = entry.value) {
+                        is IniValue -> v
+                        is String -> IniValue(v)
+                        is Boolean -> IniValue(v)
+                        is Int -> IniValue(v)
+                        is Float -> IniValue(v)
+                        null -> IniValue(null as String?)
+                        else -> throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
                     }
-                }
-                return value.toMutableMap()
+                }.toMutableMap()
             }
             else -> throw InvalidTypeException("Invalid type for IniEntry: ${value?.javaClass}")
         }

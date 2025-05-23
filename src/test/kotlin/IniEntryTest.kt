@@ -173,7 +173,7 @@ class IniEntryTest {
 
     @Test
     fun testGetStruct() = runBlocking<Unit> {
-        val struct = structOf("subkey" to IniValue("value"))
+        val struct = structOf("subkey" to "value")
         val entry = IniEntry("key", IniValue(struct))
         val result = entry.getStruct()
 
@@ -393,7 +393,7 @@ class IniEntryTest {
 
     @Test
     fun testArrayWithEmptyValues() {
-        var commaSeparatedArrayWithEmptyValues = IniEntry("key", listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")), IniEntryType.CommaSeparatedArray)
+        var commaSeparatedArrayWithEmptyValues = IniEntry("key", listOf("value1", IniValue(null as String?), "value3"), IniEntryType.CommaSeparatedArray)
         assertEquals("key=value1,value3", commaSeparatedArrayWithEmptyValues.toString())
 
         var repeatedLineArrayWithEmptyValues = IniEntry("key", listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")), IniEntryType.RepeatedLineArray)
