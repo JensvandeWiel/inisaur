@@ -36,7 +36,6 @@ class IniEntry {
                 }
                 return value.toMutableMap()
             }
-
             else -> throw InvalidTypeException("Invalid type for IniEntry: ${value?.javaClass}")
         }
     }

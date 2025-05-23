@@ -33,18 +33,42 @@ class IniSection(
         entries.add(entry)
     }
 
-    fun addArrayKey(key: String, value: List<IniValue>, type: IniEntryType) {
+    fun addArrayKey(key: String, value: List<Any?>, type: IniEntryType) {
         when (type) {
             IniEntryType.CommaSeparatedArray, IniEntryType.IndexedArray, IniEntryType.RepeatedLineArray -> {
-                val entry = IniEntry(key, value, type)
+                val list = value.map { item ->
+                    when (item) {
+                        is IniValue -> item
+                        is String -> IniValue(item)
+                        is Boolean -> IniValue(item)
+                        is Int -> IniValue(item)
+                        is Float -> IniValue(item)
+                        is Map<*, *> -> IniValue(item as Map<String, Any?>)
+                        null -> IniValue(null as String?)
+                        else -> throw IllegalArgumentException("Invalid type for array item: ${item::class.java}")
+                    }
+                }
+                val entry = IniEntry(key, list, type)
                 entries.add(entry)
             }
             else -> throw IllegalArgumentException("Invalid type for array: $type")
         }
     }
 
-    fun addMapKey(key: String, value: Map<String, IniValue?>) {
-        val entry = IniEntry(key, value, IniEntryType.Map)
+    fun addMapKey(key: String, value: Map<String, Any?>) {
+        val map = value.mapValues { entry ->
+            when (val item = entry.value) {
+                is IniValue -> item
+                is String -> IniValue(item)
+                is Boolean -> IniValue(item)
+                is Int -> IniValue(item)
+                is Float -> IniValue(item)
+                is Map<*, *> -> IniValue(item as Map<String, Any?>)
+                null -> IniValue(null as String?)
+                else -> throw IllegalArgumentException("Invalid type for map value: ${item::class.java}")
+            }
+        }
+        val entry = IniEntry(key, map, IniEntryType.Map)
         entries.add(entry)
     }
 
