@@ -66,7 +66,14 @@ class IniValue(
     @Throws(InvalidTypeException::class)
     fun toStringValue(): String {
         return when (value) {
-            is String -> value
+            is String -> {
+                val str = value as String
+                if (str.contains(Regex("[ ,;=#\\[\\]\\n\\r\\t@#$%^&*()]|\\\\u[0-9a-fA-F]{4}|\\\\."))) {
+                    "\"$str\""
+                } else {
+                    str
+                }
+            }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for String: ${value::class.java}")
         }
@@ -153,3 +160,4 @@ class IniValue(
         return true
     }
 }
+

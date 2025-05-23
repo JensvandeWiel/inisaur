@@ -53,4 +53,10 @@ class IniValueTest {
         assertEquals(IniValueType.Struct, struct.type())
         assertEquals(IniValueType.CapitalizedBoolean, capitalizedBoolean.type())
     }
+
+    @Test
+    fun testStringWithSpecialCharacters() {
+        val specialString = IniValue("Hello, World! @#\$%^&*()")
+        assertEquals("\"Hello, World! @#\$%^&*()\"", specialString.toString())
+    }
 }
