@@ -12,6 +12,6 @@ fun Struct.toIniValue(): IniValue {
     return IniValue(this, IniValueType.Struct)
 }
 
-fun newStruct(initial: Struct): Struct {
-    return mutableMapOf()
+fun structOf(vararg pairs: Pair<String, IniValue?>): Struct {
+    return mapOf(*pairs)
 }

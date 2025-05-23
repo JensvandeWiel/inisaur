@@ -135,4 +135,12 @@ class IniValue(
     fun type(): IniValueType {
         return type
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (javaClass != other?.javaClass) return false
+        other as IniValue
+        if (value != other.value) return false
+        if (type != other.type) return false
+        return true
+    }
 }

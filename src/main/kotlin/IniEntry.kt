@@ -112,7 +112,11 @@ class IniEntry {
             throw InvalidTypeException("Invalid type for CommaSeparatedArray: $type")
         }
         return keyString(when (_value) {
-            is MutableList<*> -> (_value as MutableList<*>).joinToString(",")
+            is MutableList<*> -> (_value as MutableList<*>)
+                .filter {
+                    it != null && (it !is IniValue || it.getValue() != null)
+                }
+                .joinToString(",")
             null -> ""
             else -> throw InvalidTypeException("Invalid type for CommaSeparatedArray: ${_value?.javaClass}")
         })
@@ -125,7 +129,9 @@ class IniEntry {
         }
         return when (_value) {
             is MutableList<*> -> (_value as MutableList<*>)
-                .filter { it != null && it.toString().isNotEmpty() }
+                .filter {
+                    it != null && (it !is IniValue || it.getValue() != null)
+                }
                 .joinToString("\n") { "$key=$it" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for RepeatedLineArray: ${_value?.javaClass}")
@@ -139,7 +145,7 @@ class IniEntry {
         }
         val parentKey = key
         return (when (_value) {
-            is MutableList<*> -> (_value as MutableList<*>).fold("") { acc, v -> if (v == null || (v as IniValue).toString() == "") acc else "\n$acc$parentKey[${(_value as MutableList<Any?>).indexOf(v)}]=$v\n" }
+            is MutableList<*> -> (_value as MutableList<*>).fold("") { acc, v -> if (v == null || (v as IniValue).toString() == "") "\n$acc$parentKey[${(_value as MutableList<Any?>).indexOf(v)}]=\n" else "\n$acc$parentKey[${(_value as MutableList<Any?>).indexOf(v)}]=$v\n" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for IndexedArray: ${_value?.javaClass}")
         }).trim()
