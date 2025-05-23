@@ -1,4 +1,5 @@
 import enums.IniEntryType
+import enums.IniValueType
 import java.security.Key
 
 class IniSection(
@@ -34,7 +35,7 @@ class IniSection(
         entries.add(entry)
     }
 
-    fun addArrayKey(key: String, value: List<IniValue?>, type: IniEntryType) {
+    fun addArrayKey(key: String, value: List<IniValue>, type: IniEntryType) {
         when (type) {
             IniEntryType.CommaSeparatedArray, IniEntryType.IndexedArray, IniEntryType.RepeatedLineArray -> {
                 val entry = IniEntry(key, value, type)
@@ -49,5 +50,48 @@ class IniSection(
         entries.add(entry)
     }
 
+    suspend fun getBoolean(key: String): Boolean? {
+        val entry = entries.find { it.key == key }
+        return entry?.getBoolean()
+    }
 
+    suspend fun getInteger(key: String): Int? {
+        val entry = entries.find { it.key == key }
+        return entry?.getInteger()
+    }
+
+    suspend fun getFloat(key: String): Float? {
+        val entry = entries.find { it.key == key }
+        return entry?.getFloat()
+    }
+
+    suspend fun getString(key: String): String? {
+        val entry = entries.find { it.key == key }
+        return entry?.getString()
+    }
+
+    suspend fun getStruct(key: String): Map<String, Any?>? {
+        val entry = entries.find { it.key == key }
+        return entry?.getStruct()
+    }
+
+    suspend fun getArray(key: String): List<Any?>? {
+        val entry = entries.find { it.key == key }
+        return entry?.getArrayValues()
+    }
+
+    suspend fun getMap(key: String): Map<String, Any?>? {
+        val entry = entries.find { it.key == key }
+        return entry?.getMapValues()
+    }
+
+    fun getKeyType(key: String): IniEntryType? {
+        val entry = entries.find { it.key == key }
+        return entry?.type
+    }
+
+    suspend fun getKey(key: String): Any? {
+        val entry = entries.find { it.key == key }
+        return entry?.getValue()?.getValue()
+    }
 }

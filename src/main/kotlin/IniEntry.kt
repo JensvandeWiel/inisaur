@@ -11,7 +11,7 @@ class IniEntry {
     val type: IniEntryType
     private val mutex = Mutex()
 
-    private fun handleNewValue(value: Any?, type: IniEntryType): Any? {
+    private fun handleNewValue(value: Any, type: IniEntryType): Any {
         return when (value) {
             is IniValue -> value
             is List<*>, is MutableList<*> -> {
@@ -19,7 +19,7 @@ class IniEntry {
                     throw InvalidTypeException("Invalid type for IniEntry: $type")
                 }
                 value.forEach { v ->
-                    if (v !is IniValue && v != null) {
+                    if (v !is IniValue) {
                         throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
                     }
                 }
@@ -44,7 +44,7 @@ class IniEntry {
     @Throws(InvalidTypeException::class)
     constructor(
         key: String,
-        value: Any?,
+        value: Any,
         type: IniEntryType,
     ) {
         this.key = key
@@ -64,14 +64,14 @@ class IniEntry {
     )
 
     @Throws(InvalidTypeException::class)
-    constructor(key: String, value: List<IniValue?>, type: IniEntryType) : this(
+    constructor(key: String, value: List<IniValue>, type: IniEntryType) : this(
         key,
-        value as Any?,
+        value as Any,
         type
     )
 
     @Throws(InvalidTypeException::class)
-    constructor(key: String, value: Map<String, IniValue?>) : this(
+    constructor(key: String, value: Map<String, IniValue>) : this(
         key,
         value,
         IniEntryType.Map
@@ -144,11 +144,23 @@ class IniEntry {
             throw InvalidTypeException("Invalid type for IndexedArray: $type")
         }
         val parentKey = key
-        return (when (_value) {
-            is MutableList<*> -> (_value as MutableList<*>).fold("") { acc, v -> if (v == null || (v as IniValue).toString() == "") "\n$acc$parentKey[${(_value as MutableList<Any?>).indexOf(v)}]=\n" else "\n$acc$parentKey[${(_value as MutableList<Any?>).indexOf(v)}]=$v\n" }
+        return when (_value) {
+            is MutableList<*> -> {
+                val list = _value as MutableList<*>
+                val sb = StringBuilder()
+                list.forEachIndexed { idx, v ->
+                    sb.append("$parentKey[$idx]=")
+                    if (v is IniValue && v.getValue() != null) {
+                        sb.append(v.toString())
+                    }
+                    sb.append("\n")
+                }
+                if (sb.isNotEmpty()) sb.setLength(sb.length - 1)
+                sb.toString()
+            }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for IndexedArray: ${_value?.javaClass}")
-        }).trim()
+        }
     }
 
     @Throws(InvalidTypeException::class)
@@ -164,11 +176,11 @@ class IniEntry {
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun getValue(): IniValue? = mutex.withLock {
+    suspend fun getValue(): IniValue = mutex.withLock {
         if (type != IniEntryType.Plain) {
             throw InvalidTypeException("Invalid type for Plain: $type")
         }
-        return _value as? IniValue
+        return _value as IniValue
     }
 
     @Throws(InvalidTypeException::class)
@@ -224,7 +236,7 @@ class IniEntry {
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun getStruct(): Map<String, IniValue?>? = mutex.withLock {
+    suspend fun getStruct(): Struct? = mutex.withLock {
         if (type != IniEntryType.Plain) {
             throw InvalidTypeException("Invalid type for Plain: $type")
         }
@@ -237,7 +249,7 @@ class IniEntry {
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun setValue(value: IniValue?) = mutex.withLock {
+    suspend fun setValue(value: IniValue) = mutex.withLock {
         if (type != IniEntryType.Plain) {
             throw InvalidTypeException("Invalid type for Plain: $type")
         }
@@ -285,35 +297,59 @@ class IniEntry {
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun getArrayValues(): List<IniValue?>? = mutex.withLock {
+    suspend fun getArrayValues(): List<Any?> = mutex.withLock {
         if (type != IniEntryType.CommaSeparatedArray && type != IniEntryType.RepeatedLineArray && type != IniEntryType.IndexedArray) {
             throw InvalidTypeException("Invalid type for array: $type")
         }
-        return _value as? List<IniValue?>
+        return when (_value) {
+            is MutableList<*> -> (_value as MutableList<*>)
+                .map {
+                    if (it is IniValue) {
+                        it.getValue()
+                    } else {
+                        it
+                    }
+                }
+            null -> emptyList()
+            else -> throw InvalidTypeException("Invalid type for array: ${_value?.javaClass}")
+        }
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun setArrayValues(value: List<IniValue?>?) = mutex.withLock {
+    suspend fun setArrayValues(value: List<IniValue>) = mutex.withLock {
         if (type != IniEntryType.CommaSeparatedArray && type != IniEntryType.RepeatedLineArray && type != IniEntryType.IndexedArray) {
             throw InvalidTypeException("Invalid type for array: $type")
         }
-        _value = handleNewValue(value, type)
+        _value = handleNewValue(value as Any, type)
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun getMapValues(): Map<String, IniValue?>? = mutex.withLock {
+    suspend fun getMapValues(): Map<String, Any?>? = mutex.withLock {
         if (type != IniEntryType.Map) {
             throw InvalidTypeException("Invalid type for Map: $type")
         }
-        return _value as? Map<String, IniValue?>
+
+        return when (_value) {
+            is MutableMap<*, *> -> (_value as MutableMap<String, Any?>)
+                .mapValues {
+                    if (it.value is IniValue) {
+                        (it.value as IniValue).getValue()
+                    } else {
+                        it.value
+                    }
+                }
+
+            null -> null
+            else -> throw InvalidTypeException("Invalid type for array: ${_value?.javaClass}")
+        }
     }
 
     @Throws(InvalidTypeException::class)
-    suspend fun setMapValues(value: Map<String, IniValue?>?) = mutex.withLock {
+    suspend fun setMapValues(value: Map<String, IniValue>) = mutex.withLock {
         if (type != IniEntryType.Map) {
             throw InvalidTypeException("Invalid type for Map: $type")
         }
-        _value = handleNewValue(value, type)
+        _value = handleNewValue(value as Any, type)
     }
 
     private fun isCapitalizedBoolean(value: Any?): Boolean {

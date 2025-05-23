@@ -33,7 +33,7 @@ class IniValueTest {
         assertEquals(true, boolean.getValue())
         assertEquals(42, integer.getValue())
         assertEquals(3.14f, float.getValue())
-        assertEquals(structOf("key" to IniValue("value")), struct.getValue())
+        assertEquals(structOf("key" to IniValue("value")).underlyingValue(), struct.getValue())
         assertEquals(true, capitalizedBoolean.getValue())
     }
 

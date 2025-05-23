@@ -381,7 +381,7 @@ class IniEntryTest {
         assertEquals("key=", nullStruct.toString())
 
         // Test with null elements in array
-        val arrayWithNulls = IniEntry("key", listOf(IniValue("value1"), null, IniValue("value3")), IniEntryType.CommaSeparatedArray)
+        val arrayWithNulls = IniEntry("key", listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")), IniEntryType.CommaSeparatedArray)
         assertEquals("key=value1,value3", arrayWithNulls.toString())
 
         // Test setting to null
@@ -399,7 +399,7 @@ class IniEntryTest {
         var repeatedLineArrayWithEmptyValues = IniEntry("key", listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")), IniEntryType.RepeatedLineArray)
         assertEquals("key=value1\nkey=value3", repeatedLineArrayWithEmptyValues.toString())
 
-        val indexedArrayWithEmptyKeys = IniEntry("key", listOf(null, IniValue(1), IniValue(null as String?)), IniEntryType.IndexedArray)
+        val indexedArrayWithEmptyKeys = IniEntry("key", listOf(IniValue(null as String?), IniValue(1), IniValue(null as String?)), IniEntryType.IndexedArray)
         assertEquals("key[0]=\nkey[1]=1\nkey[2]=", indexedArrayWithEmptyKeys.toString())
     }
 }

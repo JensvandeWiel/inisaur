@@ -125,10 +125,19 @@ class IniValue(
     }
 
     @Throws(InvalidTypeException::class)
-    fun getStruct(): Map<String, IniValue?>? {
-        return when (type) {
-            IniValueType.Struct -> value as? Map<String, IniValue?>
-            else -> throw InvalidTypeException("Invalid type for Struct: $type")
+    fun getStruct(): Map<String, Any?>? {
+        return when (value) {
+            is MutableMap<*, *> -> (value as MutableMap<String, Any?>)
+                .mapValues {
+                    if (it.value is IniValue) {
+                        (it.value as IniValue).getValue()
+                    } else {
+                        it.value
+                    }
+                }
+
+            null -> null
+            else -> throw InvalidTypeException("Invalid type for array: ${value?.javaClass}")
         }
     }
 
