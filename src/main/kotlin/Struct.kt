@@ -1,6 +1,6 @@
 import enums.IniValueType
 
-typealias Struct = Map<String, IniValue>
+typealias Struct = Map<String, IniValue?>
 
 /**
  * Converts a [Struct] to an [IniValue].

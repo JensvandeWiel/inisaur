@@ -17,7 +17,7 @@ fun main() {
     val plainFloatEntry = IniEntry("PlainFloat", IniValue(3.14f), IniEntryType.Plain)
     println("PlainFloatEntry:")
     println(plainFloatEntry)
-    val plainStructEntry = IniEntry("PlainStruct", IniValue(mapOf("key" to IniValue("value"), "key2" to IniValue(24))), IniEntryType.Plain)
+    val plainStructEntry = IniEntry("PlainStruct", IniValue(mapOf("key" to IniValue("value"), "key2" to IniValue(24), "key3" to null)), IniEntryType.Plain)
     println("PlainStructEntry:")
     println(plainStructEntry)
     val commaSeparatedArrayEntry = IniEntry("CommaSeparatedArray", listOf(IniValue(true), IniValue(false)), IniEntryType.CommaSeparatedArray)

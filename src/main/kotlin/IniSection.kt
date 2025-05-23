@@ -9,11 +9,6 @@ class IniSection(
         return "[$name]\n" + entries.joinToString("\n") { it.toString() }
     }
 
-    private fun addKey(key: String, value: IniValue?, type: IniEntryType) {
-        val entry = IniEntry(key, value, type)
-        entries.add(entry)
-    }
-
     fun addKey(key: String, value: Boolean?, capitalized: Boolean = true) {
         val entry = IniEntry(key, IniValue(value, capitalized), IniEntryType.Plain)
         entries.add(entry)

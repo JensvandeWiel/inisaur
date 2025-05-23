@@ -75,9 +75,64 @@ class IniValue(
     @Throws(InvalidTypeException::class)
     fun toStructString(): String {
         return when (value) {
-            is Map<*, *> /* Struct */ -> value.entries.joinToString(", ", "(", ")") { "${it.key}=${it.value}" }
+            is Map<*, *> /* Struct */ -> value.entries.joinToString(", ", "(", ")") { "${it.key}=${if (it.value != null) it.value.toString() else ""}" }
             null -> ""
             else -> throw InvalidTypeException("Invalid type for Struct: ${value::class.java}")
         }
+    }
+
+    @Throws(InvalidTypeException::class)
+    fun getValue(): Any? {
+        return when (type) {
+            IniValueType.CapitalizedBoolean, IniValueType.Boolean -> getBoolean()
+            IniValueType.Integer -> getInteger()
+            IniValueType.Float -> getFloat()
+            IniValueType.String -> getString()
+            IniValueType.Struct -> getStruct()
+        }
+    }
+
+    @Throws(InvalidTypeException::class)
+    fun getBoolean(): Boolean? {
+        return when (type) {
+            IniValueType.CapitalizedBoolean, IniValueType.Boolean -> value as? Boolean
+            else -> throw InvalidTypeException("Invalid type for Boolean: $type")
+        }
+    }
+
+    @Throws(InvalidTypeException::class)
+    fun getInteger(): Int? {
+        return when (type) {
+            IniValueType.Integer -> value as? Int
+            else -> throw InvalidTypeException("Invalid type for Integer: $type")
+        }
+    }
+
+    @Throws(InvalidTypeException::class)
+    fun getFloat(): Float? {
+        return when (type) {
+            IniValueType.Float -> value as? Float
+            else -> throw InvalidTypeException("Invalid type for Float: $type")
+        }
+    }
+
+    @Throws(InvalidTypeException::class)
+    fun getString(): String? {
+        return when (type) {
+            IniValueType.String -> value as? String
+            else -> throw InvalidTypeException("Invalid type for String: $type")
+        }
+    }
+
+    @Throws(InvalidTypeException::class)
+    fun getStruct(): Map<String, IniValue?>? {
+        return when (type) {
+            IniValueType.Struct -> value as? Map<String, IniValue?>
+            else -> throw InvalidTypeException("Invalid type for Struct: $type")
+        }
+    }
+
+    fun type(): IniValueType {
+        return type
     }
 }
