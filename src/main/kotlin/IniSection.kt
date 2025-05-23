@@ -116,4 +116,156 @@ class IniSection(
         val entry = entries.find { it.key == key }
         return entry?.getValue()?.getValue()
     }
+
+    private fun updateKey(key: String, newValue: IniValue) {
+        val entry = entries.find { it.key == key }
+        if (entry != null) {
+            entries.remove(entry)
+            val updatedEntry = entry.update(newValue)
+            entries.add(updatedEntry)
+        } else {
+            throw IllegalArgumentException("Key $key not found in section $name")
+        }
+    }
+
+    fun updateKey(key: String, value: Boolean?, capitalized: Boolean = true) {
+        val entry = IniValue(value, capitalized)
+        updateKey(key, entry)
+    }
+
+    fun updateKey(key: String, value: Int?) {
+        val entry = IniValue(value)
+        updateKey(key, entry)
+    }
+
+    fun updateKey(key: String, value: Float?) {
+        val entry = IniValue(value)
+        updateKey(key, entry)
+    }
+
+    fun updateKey(key: String, value: String?) {
+        val entry = IniValue(value)
+        updateKey(key, entry)
+    }
+
+    fun updateKey(key: String, value: Struct?) {
+        val entry = IniValue(value)
+        updateKey(key, entry)
+    }
+
+    fun updateArrayKey(key: String, value: List<Any?>) {
+        val entry = entries.find { it.key == key }
+        if (entry != null) {
+            entries.remove(entry)
+            addArrayKey(key, value, entry.type)
+        } else {
+            throw IllegalArgumentException("Key $key not found in section $name")
+        }
+    }
+
+    fun updateMapKey(key: String, value: Map<String, Any?>) {
+        val entry = entries.find { it.key == key }
+        if (entry != null) {
+            entries.remove(entry)
+            addMapKey(key, value)
+        } else {
+            throw IllegalArgumentException("Key $key not found in section $name")
+        }
+    }
+
+    fun deleteKey(key: String) {
+        val entry = entries.find { it.key == key }
+        if (entry != null) {
+            entries.remove(entry)
+        } else {
+            throw IllegalArgumentException("Key $key not found in section $name")
+        }
+    }
+
+    fun clear() {
+        entries.clear()
+    }
+
+    fun isEmpty(): Boolean {
+        return entries.isEmpty()
+    }
+
+    fun containsKey(key: String): Boolean {
+        return entries.any { it.key == key }
+    }
+
+    fun createOrUpdateKey(key: String, value: Boolean?, capitalized: Boolean = true) {
+        if (containsKey(key)) {
+            updateKey(key, value, capitalized)
+        } else {
+            addKey(key, value, capitalized)
+        }
+    }
+
+    fun createOrUpdateKey(key: String, value: Int?) {
+        if (containsKey(key)) {
+            updateKey(key, value)
+        } else {
+            addKey(key, value)
+        }
+    }
+
+    fun createOrUpdateKey(key: String, value: Float?) {
+        if (containsKey(key)) {
+            updateKey(key, value)
+        } else {
+            addKey(key, value)
+        }
+    }
+
+    fun createOrUpdateKey(key: String, value: String?) {
+        if (containsKey(key)) {
+            updateKey(key, value)
+        } else {
+            addKey(key, value)
+        }
+    }
+
+    fun createOrUpdateKey(key: String, value: Struct?) {
+        if (containsKey(key)) {
+            updateKey(key, value)
+        } else {
+            addKey(key, value)
+        }
+    }
+
+    fun createOrUpdateArrayKey(key: String, value: List<Any?>) {
+        if (containsKey(key)) {
+            updateArrayKey(key, value)
+        } else {
+            addArrayKey(key, value, IniEntryType.CommaSeparatedArray)
+        }
+    }
+
+    fun createOrUpdateMapKey(key: String, value: Map<String, Any?>) {
+        if (containsKey(key)) {
+            updateMapKey(key, value)
+        } else {
+            addMapKey(key, value)
+        }
+    }
+
+    fun removeKeyOrFail(key: String) {
+        val entry = entries.find { it.key == key }
+        if (entry != null) {
+            entries.remove(entry)
+        } else {
+            throw IllegalArgumentException("Key $key not found in section $name")
+        }
+    }
+
+    fun removeKey(key: String): Boolean {
+        val entry = entries.find { it.key == key }
+        return if (entry != null) {
+            entries.remove(entry)
+            true
+        } else {
+            false
+        }
+    }
 }

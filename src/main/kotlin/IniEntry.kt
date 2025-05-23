@@ -11,6 +11,10 @@ class IniEntry {
     val type: IniEntryType
     private val mutex = Mutex()
 
+    fun update(value: Any): IniEntry {
+        return IniEntry(key, value, type)
+    }
+
     private fun handleNewValue(value: Any, type: IniEntryType): Any {
         return when (value) {
             is IniValue -> value
