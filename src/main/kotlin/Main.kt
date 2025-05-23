@@ -1,16 +1,30 @@
+import parser.Lexer
+import parser.TokenType
 
-suspend fun main() {
-    val section = IniSection("Test")
-    section.addKey("key1", "value1")
-    println(section.toString())
+fun main() {
+    val input = """
+        ; This is a comment
+        [ServerSettings]
+        ServerName=ARK Server
+        MaxPlayers=70
+        EnablePvP=True
+        DifficultyOffset=0.2
+        CustomRecipeCostMultiplier=1.5
+        WelcomeMessage="Welcome to the island!"
 
-    section.updateKey("key1", "newValue")
+        [Mods]
+        ModList=123456,654321
+        ModMap[Main]=Valguero
+        ModMap[Event]=Ragnarok
+        OverrideNamedEngramEntries=(EngramClassName="EngramEntry_Dino_Aid_X_C",EngramHidden=True,EngramPointsCost=75,EngramLevelRequirement=150,RemoveEngramPreReq=False)
+        NestedStruct=(StructName="NestedStruct", StructValue=(Key1=Value1, Key2=Value2))
+    """.trimIndent()
 
-    println(section.toString())
+    val lexer = Lexer(input)
 
-    section.createOrUpdateKey("key2", "value2")
-    println(section.toString())
-
-    section.removeKey("key1")
-    println(section.toString())
+    while (true) {
+        val token = lexer.nextToken()
+        println(token)
+        if (token.type == TokenType.EOF) break
+    }
 }
