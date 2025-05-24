@@ -215,9 +215,9 @@ class Lexer(private val input: String) {
         val startCol = column
         val sb = StringBuilder()
 
-        // Read until newline, end of input, or a structural character
+        // Read until newline, end of input, structural character or a comment character
         while (currentChar != '\n' && currentChar != '\u0000'
-            && currentChar != ',' && currentChar != ')' && currentChar != '(') {
+            && currentChar != ',' && currentChar != ')' && currentChar != '(' && currentChar != ';') {
             sb.append(currentChar)
             advance()
         }
