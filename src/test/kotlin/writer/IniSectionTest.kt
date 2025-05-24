@@ -1,3 +1,5 @@
+package writer
+
 import enums.IniEntryType
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*

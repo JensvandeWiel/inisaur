@@ -1,3 +1,5 @@
+package writer
+
 import enums.IniValueType
 
 typealias Struct = Map<String, Any?>

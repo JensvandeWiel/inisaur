@@ -1,3 +1,5 @@
+package writer
+
 import enums.IniEntryType
 import enums.IniValueType
 import exceptions.InvalidTypeException
@@ -381,7 +383,11 @@ class IniEntryTest {
         assertEquals("key=", nullStruct.toString())
 
         // Test with null elements in array
-        val arrayWithNulls = IniEntry("key", listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")), IniEntryType.CommaSeparatedArray)
+        val arrayWithNulls = IniEntry(
+            "key",
+            listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")),
+            IniEntryType.CommaSeparatedArray
+        )
         assertEquals("key=value1,value3", arrayWithNulls.toString())
 
         // Test setting to null
@@ -393,13 +399,22 @@ class IniEntryTest {
 
     @Test
     fun testArrayWithEmptyValues() {
-        var commaSeparatedArrayWithEmptyValues = IniEntry("key", listOf("value1", IniValue(null as String?), "value3"), IniEntryType.CommaSeparatedArray)
+        var commaSeparatedArrayWithEmptyValues =
+            IniEntry("key", listOf("value1", IniValue(null as String?), "value3"), IniEntryType.CommaSeparatedArray)
         assertEquals("key=value1,value3", commaSeparatedArrayWithEmptyValues.toString())
 
-        var repeatedLineArrayWithEmptyValues = IniEntry("key", listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")), IniEntryType.RepeatedLineArray)
+        var repeatedLineArrayWithEmptyValues = IniEntry(
+            "key",
+            listOf(IniValue("value1"), IniValue(null as String?), IniValue("value3")),
+            IniEntryType.RepeatedLineArray
+        )
         assertEquals("key=value1\nkey=value3", repeatedLineArrayWithEmptyValues.toString())
 
-        val indexedArrayWithEmptyKeys = IniEntry("key", listOf(IniValue(null as String?), IniValue(1), IniValue(null as String?)), IniEntryType.IndexedArray)
+        val indexedArrayWithEmptyKeys = IniEntry(
+            "key",
+            listOf(IniValue(null as String?), IniValue(1), IniValue(null as String?)),
+            IniEntryType.IndexedArray
+        )
         assertEquals("key[0]=\nkey[1]=1\nkey[2]=", indexedArrayWithEmptyKeys.toString())
     }
 }

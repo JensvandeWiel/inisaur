@@ -1,3 +1,5 @@
+package writer
+
 import enums.IniEntryType
 
 class IniSection(

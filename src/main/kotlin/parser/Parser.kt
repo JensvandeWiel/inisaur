@@ -156,7 +156,7 @@ class Parser(private val lexer: Lexer) {
         eat(keyToken.type)
         eat(TokenType.EQUALS)
 
-        // Struct
+        // writer.Struct
         if (currentToken.type == TokenType.STRUCT_START) {
             val struct = parseStruct()
             skipLine()

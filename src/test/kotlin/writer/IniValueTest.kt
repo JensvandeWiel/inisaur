@@ -1,3 +1,5 @@
+package writer
+
 import enums.IniValueType
 import kotlin.test.Test
 import kotlin.test.assertEquals

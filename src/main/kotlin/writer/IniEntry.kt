@@ -1,3 +1,5 @@
+package writer
+
 import enums.IniEntryType
 import enums.IniValueType
 import exceptions.InvalidTypeException
@@ -20,7 +22,7 @@ class IniEntry {
             is IniValue -> value
             is List<*>, is MutableList<*> -> {
                 if (type != IniEntryType.CommaSeparatedArray && type != IniEntryType.RepeatedLineArray && type != IniEntryType.IndexedArray) {
-                    throw InvalidTypeException("Invalid type for IniEntry: $type")
+                    throw InvalidTypeException("Invalid type for writer.IniEntry: $type")
                 }
                 return value.map { v ->
                     when (v) {
@@ -30,13 +32,13 @@ class IniEntry {
                         is Int -> IniValue(v)
                         is Float -> IniValue(v)
                         null -> IniValue(null as String?)
-                        else -> throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
+                        else -> throw InvalidTypeException("Invalid type for writer.IniEntry: ${v?.javaClass}")
                     }
                 }.toMutableList()
             }
             is Map<*, *>, is MutableMap<*, *> -> {
                 if (type != IniEntryType.Map) {
-                    throw InvalidTypeException("Invalid type for IniEntry: $type")
+                    throw InvalidTypeException("Invalid type for writer.IniEntry: $type")
                 }
 
                 return value.mapValues { entry ->
@@ -47,11 +49,11 @@ class IniEntry {
                         is Int -> IniValue(v)
                         is Float -> IniValue(v)
                         null -> IniValue(null as String?)
-                        else -> throw InvalidTypeException("Invalid type for IniEntry: ${v?.javaClass}")
+                        else -> throw InvalidTypeException("Invalid type for writer.IniEntry: ${v?.javaClass}")
                     }
                 }.toMutableMap()
             }
-            else -> throw InvalidTypeException("Invalid type for IniEntry: ${value?.javaClass}")
+            else -> throw InvalidTypeException("Invalid type for writer.IniEntry: ${value?.javaClass}")
         }
     }
 

@@ -1,4 +1,5 @@
-import enums.IniEntryType
+package writer
+
 import enums.IniValueType
 import exceptions.InvalidTypeException
 
@@ -82,9 +83,9 @@ class IniValue(
     @Throws(InvalidTypeException::class)
     fun toStructString(): String {
         return when (value) {
-            is Map<*, *> /* Struct */ -> value.entries.joinToString(", ", "(", ")") { "${it.key}=${if (it.value != null) it.value.toString() else ""}" }
+            is Map<*, *> /* writer.Struct */ -> value.entries.joinToString(", ", "(", ")") { "${it.key}=${if (it.value != null) it.value.toString() else ""}" }
             null -> ""
-            else -> throw InvalidTypeException("Invalid type for Struct: ${value::class.java}")
+            else -> throw InvalidTypeException("Invalid type for writer.Struct: ${value::class.java}")
         }
     }
 
