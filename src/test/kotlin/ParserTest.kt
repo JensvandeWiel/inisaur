@@ -100,22 +100,22 @@ class ParserTest {
         val overrideNamedEngramEntries = mods.entries[4] as Plain
         assertTrue(overrideNamedEngramEntries.value is StructValue)
         val structFields = (overrideNamedEngramEntries.value as StructValue).fields
-        assertEquals(2, structFields.size)
-        assertEquals("EngramEntry_Dino_Aid_X_C", structFields["EngramClassName"])
-        assertEquals(true, structFields["EngramHidden"])
+        assertEquals(2, structFields!!.size)
+        assertEquals("\"EngramEntry_Dino_Aid_X_C\"", structFields!!["EngramClassName"].toString())
+        assertEquals(true, structFields!!["EngramHidden"].toString().toBoolean())
 
         // Test nested struct
         val nestedStruct = mods.entries[5] as Plain
         assertTrue(nestedStruct.value is StructValue)
         val nestedStructFields = (nestedStruct.value as StructValue).fields
-        assertEquals(2, nestedStructFields.size)
-        assertEquals("NestedStruct", nestedStructFields["StructName"])
+        assertEquals(2, nestedStructFields!!.size)
+        assertEquals("NestedStruct", nestedStructFields!!.get("StructName").toString())
 
         @Suppress("UNCHECKED_CAST")
-        val innerStruct = nestedStructFields["StructValue"] as Map<String, Any?>
+        val innerStruct = (nestedStructFields["StructValue"] as StructValue).fields!!
         assertEquals(2, innerStruct.size)
-        assertEquals("Value1", innerStruct["Key1"])
-        assertEquals("Value2", innerStruct["Key2"])
+        assertEquals("Value1", innerStruct["Key1"].toString())
+        assertEquals("Value2", innerStruct["Key2"].toString())
     }
 
     @Test
@@ -249,5 +249,40 @@ class ParserTest {
         assertEquals(1, iniFile.sections[0].entries.size)
         assertEquals(1, iniFile.sections[1].entries.size)
         assertEquals(1, iniFile.sections[2].entries.size)
+    }
+
+    @Test
+    fun `test parsed ini returns to ini string`() {
+        val input = """
+[ServerSettings]
+ServerName=ARK Server
+MaxPlayers=70
+EnablePvP=True
+DifficultyOffset=0.2
+CustomRecipeCostMultiplier=1.5
+WelcomeMessage=Welcome to the khjghjghjgjkh
+
+[Mods]
+ModList=123456,654321
+Ke1y=Value
+Ke1y=Value2
+Key[1]=32
+Key[0]=
+Key[2]=64
+ModMap[Main]=Valguero
+ModMap[Event]=Ragnarok
+OverrideNamedEngramEntries=(EngramClassName="EngramEntry_Dino_Aid_X_C", EngramHidden=True)
+NestedStruct=(StructName=NestedStruct, StructValue=(Key1=Value1, Key2=Value2))
+        """.trimIndent()
+
+        val lexer = Lexer(input)
+        val parser = Parser(lexer)
+        val iniFile = parser.parse()
+
+        // Convert back to INI string
+        val iniString = iniFile.toString()
+
+        // Check if the string matches the original input
+        assertEquals(input, iniString.trim())
     }
 }

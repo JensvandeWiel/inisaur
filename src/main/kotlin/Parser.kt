@@ -236,7 +236,7 @@ class Parser(private val lexer: Lexer) {
 
     private fun parseStruct(): StructValue {
         eat(TokenType.STRUCT_START)
-        val fields = mutableMapOf<String, Any?>()
+        val fields = mutableMapOf<String, Value?>()
 
         while (currentToken.type != TokenType.STRUCT_END && currentToken.type != TokenType.EOF) {
             // Parse field name
@@ -247,7 +247,7 @@ class Parser(private val lexer: Lexer) {
 
                 // Parse field value
                 val value = parseValue()
-                fields[key] = valueToNativeType(value)
+                fields[key] = value
 
                 // Eat comma if present
                 if (currentToken.type == TokenType.COMMA) {
