@@ -1,28 +1,47 @@
 fun main() {
-    val input = """
-; This is a comment
-[ServerSettings]
-ServerName=ARK Server
-MaxPlayers=70
-EnablePvP=True
-DifficultyOffset=0.2
-CustomRecipeCostMultiplier=1.5
-WelcomeMessage=Welcome to the khjghjghjgjkh
-[Mods]
-ModList=123456,654321
-Ke1y=Value
-Ke1y=Value2
-Key[1]=32
-Key[0]=
-Key[2]=64
-ModMap[Main]=Valguero
-ModMap[Event]=Ragnarok
-OverrideNamedEngramEntries=(EngramClassName="EngramEntry_Dino_Aid_X_C",EngramHidden=True)
-NestedStruct=(StructName="NestedStruct", StructValue=(Key1=Value1, Key2=Value2))
-    """.trimIndent()
+    val iniSection = Section("ExampleSection")
+    iniSection.addKey("stringKey", "stringValue")
+    iniSection.addKey("intKey", 42)
+    iniSection.addKey("floatKey", 3.14f)
+    iniSection.addKey("boolKey", true, capitalized = false)
+    iniSection.addKey("structKey", mapOf("nestedKey" to "nestedValue"))
+    iniSection.addKey("nullKey", null as String?)
+    iniSection.addKey("emptyStructKey", emptyMap<String, Any>())
+    iniSection.addIndexedArrayKey("indexedArrayKey", mapOf(1 to "first", 2 to "second", 4 to "fourth"))
+    iniSection.addArrayKey("arrayKey", listOf("item1", "item2", "item3"))
+    iniSection.addArrayKey("repeatedArrayKey", listOf("itemA", "itemB", "itemC"), ArrayType.RepeatedLineArray)
+    iniSection.addMapKey("mapKey", mapOf("key1" to "value1", "key2" to 42))
+    iniSection.addMapKey("nestedMapKey", mapOf("nestedKey1" to "nestedValue1", "nestedKey2" to 123))
+    iniSection.addKey("boolCapitalizedKey", true, capitalized = true)
+    println(iniSection)
+    iniSection.setKey("stringKey", "newValue")
+    iniSection.setKey("emptyStructKey", mapOf("newKey" to "newValue"))
+    println("After updating keys:")
+    println(iniSection)
+}
 
-    val parser = Parser(Lexer(input))
-    val file = parser.parse()
-    println(file)
+fun displayKeyType(section: Section, key: String) {
+    try {
+        val value = section.getKey(key)
+        println("$key: ${value::class.java.simpleName} (${value::class.qualifiedName})")
+    } catch (e: Exception) {
+        println("$key: Error - ${e.message}")
+    }
+}
 
+fun displayMapTypes(map: Map<String, Any?>, indent: String = "  ") {
+    map.forEach { (key, value) ->
+        when (value) {
+            null -> println("${indent}$key: null")
+            is Map<*, *> -> {
+                println("${indent}$key: Map (${value::class.qualifiedName})")
+                @Suppress("UNCHECKED_CAST")
+                displayMapTypes(value as Map<String, Any?>, "$indent  ")
+            }
+            else -> {
+                val typeName = value::class.qualifiedName ?: value.javaClass.name
+                println("${indent}$key: ${value::class.java.simpleName} ($typeName)")
+            }
+        }
+    }
 }

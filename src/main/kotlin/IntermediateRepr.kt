@@ -30,17 +30,7 @@ data class BoolValue(val value: Boolean?, val capitalized: Boolean = true) : Val
     }
 }
 
-private fun Map<String, Value?>.toStructValue(): StructValue {
-    return StructValue(this.mapValues { it.value?.let { value ->
-        when (value) {
-            is String -> StringValue(value)
-            is Int -> IntValue(value)
-            is Float -> FloatValue(value)
-            is Boolean -> BoolValue(value)
-            else -> StringValue(value.toString()) // Fallback for other types
-        }
-    } })
-}
+
 
 data class StructValue(val fields: Map<String, Value?>) : Value() {
     override fun toString(): String {
@@ -48,6 +38,20 @@ data class StructValue(val fields: Map<String, Value?>) : Value() {
 
         return fields.entries.joinToString(", ", "(", ")") { (key, value) ->
             "$key=${formatStructValue(value)}"
+        }
+    }
+
+    fun toMap(): Map<String, Any?> {
+        return fields.mapValues { (_, value) ->
+            when (value) {
+                is StringValue -> value.value
+                is IntValue -> value.value
+                is FloatValue -> value.value
+                is BoolValue -> value.value
+                is StructValue -> value.toMap()
+                null -> null
+                else -> throw IllegalArgumentException("Unsupported value type: ${value::class.java}")
+            }
         }
     }
 
@@ -78,10 +82,36 @@ data class CommaSeparatedArray(override val key: String, val values: List<Value>
     override fun toString(): String {
         return "$key=${values.joinToString(",")}"
     }
+
+    fun toList(): List<Any?> {
+        return values.map { value ->
+            when (value) {
+                is StringValue -> value.value
+                is IntValue -> value.value
+                is FloatValue -> value.value
+                is BoolValue -> value.value
+                is StructValue -> value.toMap()
+                else -> throw IllegalArgumentException("Unsupported value type: ${value::class.java}")
+            }
+        }
+    }
 }
 data class RepeatedLineArray(override val key: String, val values: List<Value>) : Entry() { // Key=Value1\nKey=Value2
     override fun toString(): String {
         return values.joinToString("\n") { "$key=$it" }
+    }
+
+    fun toList(): List<Any?> {
+        return values.map { value ->
+            when (value) {
+                is StringValue -> value.value
+                is IntValue -> value.value
+                is FloatValue -> value.value
+                is BoolValue -> value.value
+                is StructValue -> value.toMap()
+                else -> throw IllegalArgumentException("Unsupported value type: ${value::class.java}")
+            }
+        }
     }
 }
 data class IndexedArray(override val key: String, val indexedValues: Map<Int, Value>) : Entry() { // Key[0]=Value1\nKey[1]=Value2
@@ -93,20 +123,35 @@ data class IndexedArray(override val key: String, val indexedValues: Map<Int, Va
     override fun toString(): String {
         return indexedValues.entries.joinToString("\n") { (index, value) -> "$key[$index]=$value" }
     }
+
+    fun toMap(): Map<Int, Any?> {
+        return indexedValues.mapValues { (_, value) ->
+            when (value) {
+                is StringValue -> value.value
+                is IntValue -> value.value
+                is FloatValue -> value.value
+                is BoolValue -> value.value
+                is StructValue -> value.toMap()
+                else -> throw IllegalArgumentException("Unsupported value type: ${value::class.java}")
+            }
+        }
+    }
 }
 data class MapEntry(override val key: String, val value: Map<String, Value>) : Entry() { // Key[key]=Value\nKey[key2]=Value2
     override fun toString(): String {
         return value.entries.joinToString("\n") { (k, v) -> "$key[$k]=$v" }
     }
-}
 
-data class Section(val name: String, val entries: List<Entry>) {
-    override fun toString(): String {
-        return "[$name]\n" + entries.joinToString("\n")
-    }
-}
-data class IniFile(val sections: List<Section>) {
-    override fun toString(): String {
-        return sections.joinToString("\n\n")
+    fun toMap(): Map<String, Any?> {
+        return value.mapValues { (_, v) ->
+            when (v) {
+                is StringValue -> v.value
+                is IntValue -> v.value
+                is FloatValue -> v.value
+                is BoolValue -> v.value
+                is StructValue -> v.toMap()
+                else -> throw IllegalArgumentException("Unsupported value type: ${v::class.java}")
+            }
+        }
     }
 }
