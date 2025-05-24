@@ -38,10 +38,10 @@ class ParserTest {
 
         // Test ServerSettings section
         val serverSettings = iniFile.sections[0]
-        assertEquals(6, serverSettings.entries.size)
+        assertEquals(6, serverSettings.entries?.size)
 
         // Test specific entries in ServerSettings
-        val serverName = serverSettings.entries[0] as Plain
+        val serverName = serverSettings.entries!![0] as Plain
         assertEquals("ServerName", serverName.key)
         assertTrue(serverName.value is StringValue)
         assertEquals("ARK Server", (serverName.value as StringValue).value)
@@ -64,7 +64,7 @@ class ParserTest {
 
         // Test Mods section
         val mods = iniFile.sections[1]
-        assertEquals(6, mods.entries.size)
+        assertEquals(6, mods.entries!!.size)
 
         // Test ModList comma separated array
         val modList = mods.entries[0] as CommaSeparatedArray
@@ -139,12 +139,12 @@ class ParserTest {
         assertEquals(1, iniFile.sections.size)
         val section = iniFile.sections[0]
         assertEquals("Section", section.name)
-        assertEquals(4, section.entries.size)
+        assertEquals(4, section.entries!!.size)
 
         // Check keys are trimmed
-        assertEquals("KeyWithSpaceBefore", section.entries[0].key)
-        assertEquals("KeyWithSpaceAfter", section.entries[1].key)
-        assertEquals("KeyWithSpaceAround", section.entries[2].key)
+        assertEquals("KeyWithSpaceBefore", section.entries!![0].key)
+        assertEquals("KeyWithSpaceAfter", section.entries!![1].key)
+        assertEquals("KeyWithSpaceAround", section.entries!![2].key)
 
         // Check values
         val entry3 = section.entries[3] as Plain
@@ -212,7 +212,7 @@ class ParserTest {
         val iniFile = parser.parse()
 
         val section = iniFile.sections[0]
-        assertEquals(3, section.entries.size)
+        assertEquals(3, section.entries!!.size)
 
         val entry1 = section.entries[0] as Plain
         assertEquals("This is a quoted string", (entry1.value as StringValue).value)
@@ -246,9 +246,9 @@ class ParserTest {
         assertEquals("Section2", iniFile.sections[1].name)
         assertEquals("Section3", iniFile.sections[2].name)
 
-        assertEquals(1, iniFile.sections[0].entries.size)
-        assertEquals(1, iniFile.sections[1].entries.size)
-        assertEquals(1, iniFile.sections[2].entries.size)
+        assertEquals(1, iniFile.sections[0].entries!!.size)
+        assertEquals(1, iniFile.sections[1].entries!!.size)
+        assertEquals(1, iniFile.sections[2].entries!!.size)
     }
 
     @Test
@@ -286,3 +286,4 @@ NestedStruct=(StructName=NestedStruct, StructValue=(Key1=Value1, Key2=Value2))
         assertEquals(input, iniString.trim())
     }
 }
+
