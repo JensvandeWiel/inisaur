@@ -1,7 +1,7 @@
-package writer
-
 import enums.IniEntryType
 import kotlinx.coroutines.runBlocking
+import writer.IniSection
+import writer.Struct
 import kotlin.test.*
 
 class IniSectionTest {

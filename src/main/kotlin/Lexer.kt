@@ -1,5 +1,3 @@
-package parser
-
 class Lexer(private val input: String) {
     private var position: Int = 0
     private var line: Int = 1

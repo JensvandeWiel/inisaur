@@ -1,5 +1,3 @@
-package parser
-
 enum class TokenType {
     SECTION_HEADER,
     KEY,

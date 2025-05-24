@@ -1,6 +1,7 @@
-package writer
-
 import enums.IniValueType
+import writer.IniValue
+import writer.structOf
+import writer.underlyingValue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

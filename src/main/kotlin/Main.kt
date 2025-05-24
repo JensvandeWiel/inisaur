@@ -1,7 +1,3 @@
-import parser.Lexer
-import parser.Parser
-import parser.TokenType
-
 fun main() {
     val input = """
 ; This is a comment

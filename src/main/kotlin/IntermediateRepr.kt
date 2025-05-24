@@ -1,5 +1,3 @@
-package parser
-
 sealed class Value
 data class StringValue(val value: String) : Value()
 data class IntValue(val value: Int) : Value()

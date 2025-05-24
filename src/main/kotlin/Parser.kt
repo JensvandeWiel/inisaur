@@ -1,5 +1,3 @@
-package parser
-
 import exceptions.ParseException
 import kotlin.jvm.Throws
 

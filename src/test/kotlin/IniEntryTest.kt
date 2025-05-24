@@ -1,9 +1,11 @@
-package writer
-
 import enums.IniEntryType
 import enums.IniValueType
 import exceptions.InvalidTypeException
 import kotlinx.coroutines.runBlocking
+import writer.IniEntry
+import writer.IniValue
+import writer.Struct
+import writer.structOf
 import kotlin.test.*
 
 class IniEntryTest {
