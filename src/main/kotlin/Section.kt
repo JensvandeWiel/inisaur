@@ -193,6 +193,21 @@ data class Section(val name: String, val entries: List<Entry>? = null) {
     }
 
     /**
+     * Retrieves the value associated with the given key in this section as a Map<Int, Any?>.
+     * @throws NoSuchElementException if the key is not found.
+     * @throws InvalidTypeException if the key is not an indexed array value.
+     */
+    @Throws(NoSuchElementException::class, InvalidTypeException::class)
+    fun getIndexedArrayKey(key: String): Map<Int, Any?> {
+        return _entries.firstOrNull { it.key == key }?.let {
+            when (it) {
+                is IndexedArray -> it.toMap()
+                else -> throw InvalidTypeException("Key '$key' is not an indexed array value")
+            }
+        } ?: throw NoSuchElementException("Key '$key' not found in section '$name'")
+    }
+
+    /**
      * Sets the value for the given key in this section.
      * If the key already exists and is a plain value, it updates the value.
      * If the key does not exist, it adds a new plain entry.
