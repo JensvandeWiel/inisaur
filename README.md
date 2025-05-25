@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.yourdomain:inisaur:1.0.0")
+    implementation("eu.wynq:inisaur:<version>")
 }
 ```
 
@@ -33,9 +33,9 @@ dependencies {
 
 ```xml
 <dependency>
-    <groupId>com.yourdomain</groupId>
+    <groupId>eu.wynq</groupId>
     <artifactId>inisaur</artifactId>
-    <version>1.0.0</version>
+    <version><!--<version>--></version>
 </dependency>
 ```
 
