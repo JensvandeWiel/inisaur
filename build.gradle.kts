@@ -61,12 +61,17 @@ tasks.withType<DokkaTask>().configureEach {
 }
 
 tasks.register<Copy>("syncDokkaVersionedDocs") {
-    dependsOn(tasks.dokkaHtml)
+    dependsOn("dokkaHtml")
 
     val versionDir = file("docs/$versionString")
-    from(tasks.dokkaHtml.get().outputDirectory)
+    from(layout.buildDirectory.dir("dokka"))
     into(versionDir)
+
+    doFirst {
+        versionDir.mkdirs()
+    }
 }
+
 
 val javadocJar by tasks.registering(Jar::class) {
     dependsOn(tasks.dokkaHtml)
