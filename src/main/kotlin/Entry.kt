@@ -42,7 +42,7 @@ data class RepeatedLineArray(override val key: String, val values: List<Value>) 
         }
     }
 }
-data class IndexedArray(override val key: String, val indexedValues: Map<Int, Value>) : Entry() { // Key[0]=Value1\nKey[1]=Value2
+data class IndexedArray(override val key: String, val indexedValues: IniIndexedArray) : Entry() { // Key[0]=Value1\nKey[1]=Value2
     val values: List<Value>
         get() = indexedValues.values.toList()
 
@@ -65,7 +65,7 @@ data class IndexedArray(override val key: String, val indexedValues: Map<Int, Va
         }
     }
 }
-data class MapEntry(override val key: String, val value: Map<String, Value>) : Entry() { // Key[key]=Value\nKey[key2]=Value2
+data class MapEntry(override val key: String, val value: IniMap) : Entry() { // Key[key]=Value\nKey[key2]=Value2
     override fun toString(): String {
         return value.entries.joinToString("\n") { (k, v) -> "$key[$k]=$v" }
     }
