@@ -130,6 +130,16 @@ data class IniFile(val sections: List<Section>) {
     }
 
     /**
+     * Gets a map value from a section directly.
+     * @throws NoSuchElementException if the section or key is not found.
+     * @throws InvalidTypeException if the key is not a map value.
+     */
+    @Throws(NoSuchElementException::class, InvalidTypeException::class)
+    fun getMapValue(sectionName: String, key: String): Map<String, Any?> {
+        return getSection(sectionName).getMapKey(key)
+    }
+
+    /**
      * Sets a value in a section. Creates the section if it doesn't exist.
      * @throws InvalidTypeException if the key is not a plain value.
      */
