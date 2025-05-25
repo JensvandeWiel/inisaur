@@ -49,15 +49,35 @@ kotlin {
 val versionString = project.version.toString()
 
 tasks.withType<DokkaTask>().configureEach {
-
     pluginsMapConfiguration.set(
         mapOf(
             "org.jetbrains.dokka.versioning.VersioningPlugin.version" to versionString,
-            "org.jetbrains.dokka.versioning.VersioningPlugin.olderVersionsDir" to "${project.projectDir}/docs"
+            "org.jetbrains.dokka.versioning.VersioningPlugin.olderVersionsDir" to "${project.projectDir}/docs",
+            "org.jetbrains.dokka.versioning.VersioningPlugin.renderVersionsNavigationOnAllPages" to "true"
         )
     )
 
     outputDirectory.set(buildDir.resolve("dokka"))
+}
+
+// Create a task to generate a version list in the docs directory
+tasks.register("generateVersionList") {
+    doLast {
+        val versionsDir = file("${project.projectDir}/docs")
+        val versions = versionsDir.listFiles { file -> file.isDirectory }
+            ?.sortedByDescending { it.name }
+            ?.map { it.name }
+            ?: listOf()
+
+        // Write the versions to a JSON file
+        file("${project.projectDir}/docs/versions.json").writeText(
+            """
+            {
+                "versions": ${versions.joinToString(prefix = "[\"", postfix = "\"]", separator = "\", \"")}
+            }
+            """.trimIndent()
+        )
+    }
 }
 
 tasks.register<Copy>("syncDokkaVersionedDocs") {
@@ -70,8 +90,9 @@ tasks.register<Copy>("syncDokkaVersionedDocs") {
     doFirst {
         versionDir.mkdirs()
     }
-}
 
+    finalizedBy("generateVersionList")
+}
 
 val javadocJar by tasks.registering(Jar::class) {
     dependsOn(tasks.dokkaHtml)

@@ -45,8 +45,20 @@ jobs:
           git config user.email "github-actions@github.com"
           git fetch
           git checkout gh-pages || git checkout --orphan gh-pages
-          rm -rf *
+          
+          # Don't delete existing files, instead only clear non-versioned root files
+          find . -maxdepth 1 -type f -delete
+          
+          # Copy the full versioned documentation structure
           cp -r /tmp/dokka-docs/. ./ || echo "No docs to copy"
+          
+          # Create index.html that redirects to latest version
+          LATEST_VERSION=$(ls -1 | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?$' | sort -V | tail -n 1 || echo "")
+          if [ -n "$LATEST_VERSION" ]; then
+            echo "<meta http-equiv=\"refresh\" content=\"0; url='./$LATEST_VERSION/index.html'\" />" > index.html
+            echo "<h1>Redirecting to latest version ($LATEST_VERSION)...</h1>" >> index.html
+          fi
+          
           git add .
           git commit -m "Deploy docs for version ${{ github.event.release.tag_name }}" || echo "No changes to commit"
           git push origin gh-pages
