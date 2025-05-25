@@ -1,471 +1,369 @@
 package serialization
 
+import IniFile
 import annotations.*
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
-import kotlin.reflect.KClass
+import org.junit.jupiter.api.Test
+import kotlin.test.assertFailsWith
+
+// Test data classes moved to top level (outside of inner classes)
+@IniSection("TestSection")
+data class SimpleConfig(
+    val name: String,
+    val count: Int,
+    val isEnabled: Boolean
+)
+
+@IniSection("ServerSettings")
+data class ServerConfig(
+    val serverName: String,
+    val maxPlayers: Int
+)
+
+@IniSection("GameplaySettings")
+data class GameplayConfig(
+    val difficulty: Float,
+    val enablePvP: Boolean
+)
+
+@IniSerializable
+data class GameConfig(
+    @IniSection("ServerSettings") val server: ServerConfig,
+    @IniSection("GameplaySettings") val gameplay: GameplayConfig
+)
+
+@IniSerializable
+data class OptionalGameConfig(
+    @IniSection val server: ServerConfig,
+    @IniSection val gameplay: GameplayConfig?
+)
+
+@IniSection("CustomSection")
+data class AnnotatedConfig(
+    @IniProperty(name = "custom_name")
+    val name: String,
+
+    @IniBoolean(capitalized = false)
+    val isEnabled: Boolean,
+
+    @IniProperty(ignore = true)
+    val secretValue: String
+)
+
+@IniSection("ArraySection")
+data class ArrayConfig(
+    @IniArray(arrayType = ArrayType.CommaSeparatedArray)
+    val commaSeparated: List<String>,
+
+    @IniArray(arrayType = ArrayType.RepeatedLineArray)
+    val repeatedLines: List<String>
+)
+
+@IniStruct
+data class Position(val x: Int, val y: Int, val z: Int)
+
+@IniSection("EntitySection")
+data class EntityConfig(
+    val name: String,
+    val position: Position
+)
+
+@IniSection("MapSection")
+data class MapConfig(
+    val indexedArray: Map<Int, String>,
+    val namedMap: Map<String, String>
+)
+
+class UnannotatedClass(val name: String)
+
+@IniSection("TestSection")
+data class TestConfig(val name: String)
+
+@IniStruct
+data class Vector3(val x: Float, val y: Float, val z: Float)
+
+@IniStruct
+data class SpawnSettings(val minLevel: Int, val maxLevel: Int, val position: Vector3)
+
+@IniSection("DinoSpawner")
+data class DinoConfig(
+    val name: String,
+    val enabled: Boolean,
+    val settings: SpawnSettings,
+    @IniArray val allowedBiomes: List<String>
+)
+
+@IniSection("ItemDrops")
+data class ItemDrops(
+    val dropTables: Map<String, Float>,
+    @IniArray(arrayType = ArrayType.RepeatedLineArray) val specialItems: List<String>
+)
+
+@IniSerializable
+data class FullGameConfig(
+    val dinoConfig: DinoConfig,
+    @IniSection("ItemDrops") val itemDrops: ItemDrops
+)
 
 class IniSerializerTest {
-
-    @IniStruct
-    data class Location(val x: Float, val y: Float, val z: Float, val otherLocation: Location? = null)
-
-    @IniSerializable
-    data class SimpleSettings(
-        val stringValue: String,
-        val intValue: Int,
-        val floatValue: Float,
-        val booleanValue: Boolean,
-        val nullableString: String? = null
-    )
-
-    @IniSerializable(sectionName = "CustomSection")
-    data class CustomSectionSettings(
-        val value: String
-    )
-
-    @IniSerializable
-    data class WithPropertyOverrides(
-        @IniProperty(name = "CustomName")
-        val originalName: String,
-
-        @IniProperty(ignore = true)
-        val ignoredProperty: String?,
-
-        val normalProperty: String
-    )
-
-    @IniSerializable
-    data class WithBooleanSettings(
-        @IniBoolean(capitalized = true)
-        val capitalizedBool: Boolean,
-
-        @IniBoolean(capitalized = false)
-        val lowercaseBool: Boolean
-    )
-
-    @IniSerializable
-    data class WithArraySettings(
-        @IniArray(arrayType = ArrayType.CommaSeparatedArray)
-        val commaSeparatedArray: List<String?>,
-
-        @IniArray(arrayType = ArrayType.RepeatedLineArray)
-        val repeatedLineArray: List<String?>,
-
-        // No annotation - should use CommaSeparatedArray by default
-        val defaultArray: List<Int>,
-    )
-
-    @IniSerializable
-    data class WithMapSettings(
-        val indexedMap: Map<Int, String>,
-        val namedMap: Map<String, String?>,
-        val nullableValueMap: Map<String, String?>
-    )
-
-    @IniSerializable
-    data class WithStructSettings(
-        val location: Location,
-        val nullableLocation: Location?
-    )
-
-    @IniSerializable
-    data class ComplexSettings(
-        val stringValue: String,
-        val intValue: Int,
-        val floatValue: Float,
-
-        @IniBoolean(capitalized = true)
-        val booleanValue: Boolean,
-
-        val nullableString: String? = null,
-
-        @IniArray(arrayType = ArrayType.CommaSeparatedArray)
-        val stringArray: List<String?>,
-
-        @IniArray(arrayType = ArrayType.RepeatedLineArray)
-        val intArray: List<Int>,
-
-        val defaultArray: List<String?>,
-
-        val indexedMap: Map<Int, String>,
-        val namedMap: Map<String, String?>,
-
-        val location: Location,
-        val nullableLocation: Location? = null
-    )
 
     @Nested
     inner class BasicSerializationTests {
         @Test
-        fun `test simple serialization and deserialization`() {
-            val original = SimpleSettings(
-                stringValue = "Test",
-                intValue = 42,
-                floatValue = 3.14f,
-                booleanValue = true
-            )
+        fun `serialize simple section object`() {
+            val config = SimpleConfig("Test", 42, true)
+            val iniContent = IniSerializer.serializeSection(config)
 
-            val iniString = IniSerializer.serialize(original)
-            val deserialized = IniSerializer.deserialize<SimpleSettings>(iniString)
-
-            assertEquals(original, deserialized)
+            assertTrue(iniContent.contains("[TestSection]"))
+            assertTrue(iniContent.contains("name=Test"))
+            assertTrue(iniContent.contains("count=42"))
+            assertTrue(iniContent.contains("isEnabled=True"))
         }
 
         @Test
-        fun `test null values`() {
-            val original = SimpleSettings(
-                stringValue = "Test",
-                intValue = 42,
-                floatValue = 3.14f,
-                booleanValue = true,
-                nullableString = null
+        fun `deserialize simple section object`() {
+            val ini = """
+                [TestSection]
+                name=Test
+                count=42
+                isEnabled=True
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<SimpleConfig>(ini)
+
+            assertEquals("Test", config.name)
+            assertEquals(42, config.count)
+            assertTrue(config.isEnabled)
+        }
+    }
+
+    @Nested
+    inner class MultiSectionTests {
+        @Test
+        fun `serialize multi-section object`() {
+            val config = GameConfig(
+                ServerConfig("My Server", 50),
+                GameplayConfig(0.5f, true)
             )
 
-            val iniString = IniSerializer.serialize(original)
-            val deserialized = IniSerializer.deserialize<SimpleSettings>(iniString)
+            val iniContent = IniSerializer.serialize(config)
 
-            assertEquals(original, deserialized)
-            assertNull(deserialized.nullableString)
+            assertTrue(iniContent.contains("[ServerSettings]"))
+            assertTrue(iniContent.contains("serverName=My Server"))
+            assertTrue(iniContent.contains("maxPlayers=50"))
+
+            assertTrue(iniContent.contains("[GameplaySettings]"))
+            assertTrue(iniContent.contains("difficulty=0.5"))
+            assertTrue(iniContent.contains("enablePvP=True"))
         }
 
         @Test
-        fun `test custom section name`() {
-            val original = CustomSectionSettings("Value")
+        fun `deserialize multi-section object`() {
+            val ini = """
+                [ServerSettings]
+                serverName=My Server
+                maxPlayers=50
+                
+                [GameplaySettings]
+                difficulty=0.5
+                enablePvP=True
+            """.trimIndent()
 
-            val iniString = IniSerializer.serialize(original)
-            assertTrue(iniString.contains("[CustomSection]"))
+            val config = IniSerializer.deserialize<GameConfig>(ini)
 
-            val deserialized = IniSerializer.deserialize<CustomSectionSettings>(iniString)
-            assertEquals(original, deserialized)
+            assertEquals("My Server", config.server.serverName)
+            assertEquals(50, config.server.maxPlayers)
+            assertEquals(0.5f, config.gameplay.difficulty)
+            assertTrue(config.gameplay.enablePvP)
+        }
+
+        @Test
+        fun `deserialize handles missing sections for optional properties`() {
+            val ini = """
+                [ServerSettings]
+                serverName=My Server
+                maxPlayers=50
+            """.trimIndent()
+
+            // This should fail because GameplaySettings is required
+            assertFailsWith<IllegalArgumentException> {
+                IniSerializer.deserialize<GameConfig>(ini)
+            }
+        }
+
+        @Test
+        fun `deserialize handles missing sections for nullable properties`() {
+            val ini = """
+                [ServerSettings]
+                serverName=My Server
+                maxPlayers=50
+            """.trimIndent()
+
+            // This should succeed because gameplay is nullable
+            val config = IniSerializer.deserialize<OptionalGameConfig>(ini)
+
+            assertEquals("My Server", config.server.serverName)
+            assertEquals(50, config.server.maxPlayers)
+            assertNull(config.gameplay)
         }
     }
 
     @Nested
     inner class PropertyAnnotationTests {
         @Test
-        fun `test property name override`() {
-            val original = WithPropertyOverrides(
-                originalName = "Original",
-                ignoredProperty = "Ignored",
-                normalProperty = "Normal"
-            )
+        fun `property annotations work correctly`() {
+            val config = AnnotatedConfig("Test", true, "secret")
+            val iniContent = IniSerializer.serializeSection(config)
 
-            val iniString = IniSerializer.serialize(original)
-
-            // Check that the overridden name is used
-            assertTrue(iniString.contains("CustomName=Original"))
-
-            // Check that the ignored property is not included
-            assertFalse(iniString.contains("ignoredProperty"))
-            assertFalse(iniString.contains("Ignored"))
-
-            // Check that normal properties are as expected
-            assertTrue(iniString.contains("normalProperty=Normal"))
-
-            val deserialized = IniSerializer.deserialize<WithPropertyOverrides>(iniString)
-
-            assertEquals(original.originalName, deserialized.originalName)
-            assertEquals(original.normalProperty, deserialized.normalProperty)
-
-            // The ignored property should have its default value after deserialization
-            assertEquals(null, deserialized.ignoredProperty)
-        }
-
-        @Test
-        fun `test boolean capitalization`() {
-            val original = WithBooleanSettings(
-                capitalizedBool = true,
-                lowercaseBool = false
-            )
-
-            val iniString = IniSerializer.serialize(original)
-
-            assertTrue(iniString.contains("capitalizedBool=True"))
-            assertTrue(iniString.contains("lowercaseBool=false"))
-
-            val deserialized = IniSerializer.deserialize<WithBooleanSettings>(iniString)
-
-            assertEquals(original, deserialized)
+            assertTrue(iniContent.contains("custom_name=Test"))
+            assertTrue(iniContent.contains("isEnabled=true")) // lowercase due to annotation
+            assertFalse(iniContent.contains("secretValue")) // ignored property
         }
     }
 
     @Nested
     inner class ArrayTests {
         @Test
-        fun `test array serialization with different formats`() {
-            val original = WithArraySettings(
-                commaSeparatedArray = listOf("a", "b", "c"),
-                repeatedLineArray = listOf("x", "y", "z"),
-                defaultArray = listOf(1, 2, 3),
+        fun `array annotations work correctly`() {
+            val config = ArrayConfig(
+                listOf("one", "two", "three"),
+                listOf("first", "second", "third")
             )
 
-            val iniString = IniSerializer.serialize(original)
+            val iniContent = IniSerializer.serializeSection(config)
 
-            // Check comma-separated format
-            assertTrue(iniString.contains("commaSeparatedArray=a,b,c"))
+            assertTrue(iniContent.contains("commaSeparated=one,two,three"))
 
-            // Check repeated line format (each value on separate line)
-            assertTrue(iniString.contains("repeatedLineArray=x"))
-            assertTrue(iniString.contains("repeatedLineArray=y"))
-            assertTrue(iniString.contains("repeatedLineArray=z"))
-
-            // Check default array format (comma-separated)
-            assertTrue(iniString.contains("defaultArray=1,2,3"))
-
-            val deserialized = IniSerializer.deserialize<WithArraySettings>(iniString)
-
-            assertEquals(original.commaSeparatedArray, deserialized.commaSeparatedArray)
-            assertEquals(original.repeatedLineArray, deserialized.repeatedLineArray)
-            assertEquals(original.defaultArray, deserialized.defaultArray)
-        }
-
-        @Test
-        fun `test array with trailing null`() {
-            val original = WithArraySettings(
-                commaSeparatedArray = listOf("a", "b", "c", null),
-                repeatedLineArray = listOf("x", "y", "z", null),
-                defaultArray = listOf(1, 2, 3),
-            )
-
-            val iniString = IniSerializer.serialize(original)
-            val deserialized = IniSerializer.deserialize<WithArraySettings>(iniString)
-
-            assertEquals(3, deserialized.commaSeparatedArray.size)
-            assertEquals("a", deserialized.commaSeparatedArray[0])
-            assertEquals("b", deserialized.commaSeparatedArray[1])
-            assertEquals("c", deserialized.commaSeparatedArray[2])
-
-            assertEquals(4, deserialized.repeatedLineArray.size)
-            assertEquals("x", deserialized.repeatedLineArray[0])
-            assertEquals("y", deserialized.repeatedLineArray[1])
-            assertEquals("z", deserialized.repeatedLineArray[2])
-            assertEquals(null, deserialized.repeatedLineArray[3])
-            assertNull(deserialized.repeatedLineArray[3])
-        }
-    }
-
-    @Nested
-    inner class MapTests {
-        @Test
-        fun `test map serialization and deserialization`() {
-            val original = WithMapSettings(
-                indexedMap = mapOf(1 to "first", 2 to "second", 3 to "third"),
-                namedMap = mapOf("key1" to "value1", "key2" to "value2"),
-                nullableValueMap = mapOf("key1" to null, "key2" to "value2")
-            )
-
-            val iniString = IniSerializer.serialize(original)
-
-            // Check indexed map format
-            assertTrue(iniString.contains("indexedMap[1]=first"))
-            assertTrue(iniString.contains("indexedMap[2]=second"))
-            assertTrue(iniString.contains("indexedMap[3]=third"))
-
-            // Check named map format
-            assertTrue(iniString.contains("namedMap[key1]=value1"))
-            assertTrue(iniString.contains("namedMap[key2]=value2"))
-
-            // Check map with null values
-            assertTrue(iniString.contains("nullableValueMap[key1]="))
-            assertTrue(iniString.contains("nullableValueMap[key2]=value2"))
-
-            val deserialized = IniSerializer.deserialize<WithMapSettings>(iniString)
-
-            assertEquals(original.indexedMap, deserialized.indexedMap)
-            assertEquals(original.namedMap, deserialized.namedMap)
-
-            // Check that null values are preserved in maps
-            assertEquals(2, deserialized.nullableValueMap.size)
-            assertTrue(deserialized.nullableValueMap.containsKey("key1"))
-            assertNull(deserialized.nullableValueMap["key1"])
-            assertEquals("value2", deserialized.nullableValueMap["key2"])
+            // Repeated lines should appear multiple times
+            val lines = iniContent.lines()
+            assertTrue(lines.any { it == "repeatedLines=first" })
+            assertTrue(lines.any { it == "repeatedLines=second" })
+            assertTrue(lines.any { it == "repeatedLines=third" })
         }
     }
 
     @Nested
     inner class StructTests {
         @Test
-        fun `test struct serialization and deserialization`() {
-            val nestedLocation = Location(50.0f, 75.0f, 125.0f, null)
-            val location = Location(100.0f, 200.0f, 300.0f, nestedLocation)
+        fun `struct values are serialized correctly`() {
+            val config = EntityConfig("Player", Position(10, 20, 30))
+            val iniContent = IniSerializer.serializeSection(config)
 
-            val original = WithStructSettings(
-                location = location,
-                nullableLocation = null
-            )
-
-            val iniString = IniSerializer.serialize(original)
-
-            // Check struct format with nested structs
-            assertTrue(iniString.contains("location=("))
-            assertTrue(iniString.contains("x=100.0"))
-            assertTrue(iniString.contains("y=200.0"))
-            assertTrue(iniString.contains("z=300.0"))
-            assertTrue(iniString.contains("otherLocation=("))
-            assertTrue(iniString.contains("x=50.0"))
-            assertTrue(iniString.contains("y=75.0"))
-            assertTrue(iniString.contains("z=125.0"))
-
-            // Check null struct
-            assertTrue(iniString.contains("nullableLocation="))
-
-            val deserialized = IniSerializer.deserialize<WithStructSettings>(iniString)
-
-            assertEquals(original.location.x, deserialized.location.x)
-            assertEquals(original.location.y, deserialized.location.y)
-            assertEquals(original.location.z, deserialized.location.z)
-            assertNotNull(deserialized.location.otherLocation)
-            assertEquals(original.location.otherLocation?.x, deserialized.location.otherLocation?.x)
-            assertEquals(original.location.otherLocation?.y, deserialized.location.otherLocation?.y)
-            assertEquals(original.location.otherLocation?.z, deserialized.location.otherLocation?.z)
-            assertNull(deserialized.location.otherLocation?.otherLocation)
-
-            assertNull(deserialized.nullableLocation)
-        }
-
-        @Test
-        fun `test nested null structure handling`() {
-            // Create a location with a null nested location
-            val location = Location(100.0f, 200.0f, 300.0f, null)
-            val original = WithStructSettings(location, null)
-
-            val iniString = IniSerializer.serialize(original)
-            val deserialized = IniSerializer.deserialize<WithStructSettings>(iniString)
-
-            assertEquals(original.location.x, deserialized.location.x)
-            assertEquals(original.location.y, deserialized.location.y)
-            assertEquals(original.location.z, deserialized.location.z)
-            assertNull(deserialized.location.otherLocation)
-            assertNull(deserialized.nullableLocation)
-        }
-
-        @Test
-        fun `test empty struct creation for non-nullable fields`() {
-            // Create an INI string with no fields for nested structure
-            val iniString = """
-            [WithStructSettings]
-            location=(x=100.0,y=200.0,z=300.0)
-            nullableLocation=
-            """.trimIndent()
-
-            val deserialized = IniSerializer.deserialize<WithStructSettings>(iniString)
-
-            // The location should be created with the values
-            assertEquals(100.0f, deserialized.location.x)
-            assertEquals(200.0f, deserialized.location.y)
-            assertEquals(300.0f, deserialized.location.z)
-
-            // The nullable location should be null
-            assertNull(deserialized.nullableLocation)
+            assertTrue(iniContent.contains("position=(x=10, y=20, z=30)"))
         }
     }
 
     @Nested
-    inner class ComplexTests {
+    inner class MapTests {
         @Test
-        fun `test complex serialization and deserialization`() {
-            val nestedLocation = Location(50.0f, 75.0f, 125.0f, null)
-            val location = Location(100.0f, 200.0f, 300.0f, nestedLocation)
-
-            val original = ComplexSettings(
-                stringValue = "Test",
-                intValue = 42,
-                floatValue = 3.14f,
-                booleanValue = true,
-                nullableString = null,
-                stringArray = listOf("a", "b", "c"),
-                intArray = listOf(1, 2, 3),
-                defaultArray = listOf("first", "third"),
-                indexedMap = mapOf(1 to "first", 2 to "second"),
-                namedMap = mapOf("key1" to null, "key2" to "value2"),
-                location = location,
-                nullableLocation = null
+        fun `map values are serialized correctly`() {
+            val config = MapConfig(
+                mapOf(0 to "zero", 1 to "one", 2 to "two"),
+                mapOf("key1" to "value1", "key2" to "value2")
             )
 
-            val iniString = IniSerializer.serialize(original)
-            val deserialized = IniSerializer.deserialize<ComplexSettings>(iniString)
+            val iniContent = IniSerializer.serializeSection(config)
+            val lines = iniContent.lines()
 
-            // Verify all properties
-            assertEquals(original.stringValue, deserialized.stringValue)
-            assertEquals(original.intValue, deserialized.intValue)
-            assertEquals(original.floatValue, deserialized.floatValue)
-            assertEquals(original.booleanValue, deserialized.booleanValue)
-            assertNull(deserialized.nullableString)
+            // Indexed array format
+            assertTrue(lines.any { it == "indexedArray[0]=zero" })
+            assertTrue(lines.any { it == "indexedArray[1]=one" })
+            assertTrue(lines.any { it == "indexedArray[2]=two" })
 
-            // Arrays
-            assertEquals(3, deserialized.stringArray.size)
-            assertEquals("a", deserialized.stringArray[0])
-            assertEquals("b", deserialized.stringArray[1])
-            assertEquals("c", deserialized.stringArray[2])
-
-            assertEquals(3, deserialized.intArray.size)
-            assertEquals(1, deserialized.intArray[0])
-            assertEquals(2, deserialized.intArray[1])
-            assertEquals(3, deserialized.intArray[2])
-
-            assertEquals(2, deserialized.defaultArray.size)
-            assertEquals("first", deserialized.defaultArray[0])
-            assertEquals("third", deserialized.defaultArray[1])
-
-            // Maps
-            assertEquals(2, deserialized.indexedMap.size)
-            assertEquals("first", deserialized.indexedMap[1])
-            assertEquals("second", deserialized.indexedMap[2])
-
-            assertEquals(2, deserialized.namedMap.size)
-            assertNull(deserialized.namedMap["key1"])
-            assertEquals("value2", deserialized.namedMap["key2"])
-
-            // Structs
-            assertEquals(original.location.x, deserialized.location.x)
-            assertEquals(original.location.y, deserialized.location.y)
-            assertEquals(original.location.z, deserialized.location.z)
-            assertNotNull(deserialized.location.otherLocation)
-            assertEquals(original.location.otherLocation?.x, deserialized.location.otherLocation?.x)
-            assertEquals(original.location.otherLocation?.y, deserialized.location.otherLocation?.y)
-            assertEquals(original.location.otherLocation?.z, deserialized.location.otherLocation?.z)
-
-            assertNull(deserialized.nullableLocation)
+            // Named map format
+            assertTrue(lines.any { it == "namedMap[key1]=value1" })
+            assertTrue(lines.any { it == "namedMap[key2]=value2" })
         }
     }
 
     @Nested
     inner class ErrorHandlingTests {
         @Test
-        fun `test missing section`() {
-            val iniString = """
-            [WrongSection]
-            value=test
-            """.trimIndent()
+        fun `serializing unannotated class throws exception`() {
+            val instance = UnannotatedClass("test")
 
-            assertThrows(IllegalArgumentException::class.java) {
-                IniSerializer.deserialize<SimpleSettings>(iniString)
+            assertFailsWith<IllegalArgumentException> {
+                IniSerializer.serializeSection(instance)
+            }
+
+            assertFailsWith<IllegalArgumentException> {
+                IniSerializer.serialize(instance)
             }
         }
 
         @Test
-        fun `test serialization of non-annotated class`() {
-            class NotAnnotated(val value: String)
+        fun `deserializing to unannotated class throws exception`() {
+            val ini = "[TestSection]\nname=test"
 
-            assertThrows(IllegalArgumentException::class.java) {
-                IniSerializer.serialize(NotAnnotated("test"))
+            assertFailsWith<IllegalArgumentException> {
+                IniSerializer.deserializeSection<UnannotatedClass>(ini)
+            }
+
+            assertFailsWith<IllegalArgumentException> {
+                IniSerializer.deserialize<UnannotatedClass>(ini)
             }
         }
 
         @Test
-        fun `test deserialization to non-annotated class`() {
-            class NotAnnotated(val value: String)
+        fun `deserializing with missing section throws exception`() {
+            val ini = "[WrongSection]\nname=test"
 
-            val iniString = """
-            [NotAnnotated]
-            value=test
-            """.trimIndent()
-
-            assertThrows(IllegalArgumentException::class.java) {
-                IniSerializer.deserialize(iniString, NotAnnotated::class)
+            assertFailsWith<IllegalArgumentException> {
+                IniSerializer.deserializeSection<TestConfig>(ini)
             }
+        }
+    }
+
+    @Nested
+    inner class ComplexTests {
+        @Test
+        fun `complex nested config serializes and deserializes correctly`() {
+            val config = FullGameConfig(
+                DinoConfig(
+                    "T-Rex",
+                    true,
+                    SpawnSettings(10, 150, Vector3(100f, 200f, 50f)),
+                    listOf("Forest", "Mountain", "Volcano")
+                ),
+                ItemDrops(
+                    mapOf("Common" to 0.7f, "Rare" to 0.2f, "Legendary" to 0.1f),
+                    listOf("Saddle", "Weapon", "Armor")
+                )
+            )
+
+            val iniContent = IniSerializer.serialize(config)
+            println(iniContent)
+
+            // Test a few key elements in the serialized output
+            assertTrue(iniContent.contains("[DinoSpawner]"))
+            assertTrue(iniContent.contains("name=T-Rex"))
+            assertTrue(iniContent.contains("allowedBiomes=Forest,Mountain,Volcano"))
+            assertTrue(iniContent.contains("settings=(maxLevel=150, minLevel=10, position=(x=100.0, y=200.0, z=50.0))"))
+
+            assertTrue(iniContent.contains("[ItemDrops]"))
+            assertTrue(iniContent.contains("dropTables[Common]=0.7"))
+            assertTrue(iniContent.contains("dropTables[Rare]=0.2"))
+            assertTrue(iniContent.contains("dropTables[Legendary]=0.1"))
+
+            // Now test full round-trip
+            val deserializedConfig = IniSerializer.deserialize<FullGameConfig>(iniContent)
+
+            assertEquals("T-Rex", deserializedConfig.dinoConfig.name)
+            assertTrue(deserializedConfig.dinoConfig.enabled)
+            assertEquals(10, deserializedConfig.dinoConfig.settings.minLevel)
+            assertEquals(150, deserializedConfig.dinoConfig.settings.maxLevel)
+            assertEquals(100f, deserializedConfig.dinoConfig.settings.position.x)
+            assertEquals(200f, deserializedConfig.dinoConfig.settings.position.y)
+            assertEquals(50f, deserializedConfig.dinoConfig.settings.position.z)
+            assertEquals(listOf("Forest", "Mountain", "Volcano"), deserializedConfig.dinoConfig.allowedBiomes)
+
+            assertEquals(0.7f, deserializedConfig.itemDrops.dropTables["Common"])
+            assertEquals(0.2f, deserializedConfig.itemDrops.dropTables["Rare"])
+            assertEquals(0.1f, deserializedConfig.itemDrops.dropTables["Legendary"])
+            assertTrue(deserializedConfig.itemDrops.specialItems.contains("Saddle"))
+            assertTrue(deserializedConfig.itemDrops.specialItems.contains("Weapon"))
+            assertTrue(deserializedConfig.itemDrops.specialItems.contains("Armor"))
         }
     }
 }

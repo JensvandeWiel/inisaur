@@ -1,4 +1,4 @@
-# Inisaur
+# Module Inisaur
 
 A powerful Kotlin library for parsing, manipulating, and generating INI configuration files, with special support for ARK: Survival Evolved/Ascended configuration formats.
 
@@ -12,6 +12,7 @@ A powerful Kotlin library for parsing, manipulating, and generating INI configur
 - 🧵 **Thread Safety** - Synchronous and asynchronous (suspending) API for concurrent access
 - 📝 **Type-Safe Serialization** - Kotlin class annotations for easy serialization/deserialization
 - 🛠️ **Rich API** - Intuitive methods for reading, writing, and manipulating INI data
+- 🗂️ **Multi-Section Support** - Serialize and deserialize complete INI files with multiple sections
 
 ## Installation
 
@@ -72,11 +73,11 @@ iniFile.setValue("GameSettings", "Difficulty", 0.8f)
 val outputString = iniFile.toString()
 ```
 
-### Using Annotations for Serialization
+### Using Annotations for Section Serialization
 
 ```kotlin
-// Define your config class
-@IniSerializable("ServerSettings")
+// Define your section class
+@IniSection("ServerSettings")
 data class ServerConfig(
     val serverName: String,
     
@@ -95,7 +96,7 @@ data class ServerConfig(
     val internalValue: String
 )
 
-// Serialize to INI
+// Serialize a section to INI
 val config = ServerConfig(
     serverName = "My ARK Server",
     maxPlayers = 70,
@@ -105,11 +106,47 @@ val config = ServerConfig(
     internalValue = "ignored"
 )
 
-val iniFile = IniSerializer.serialize(config)
-val iniString = iniFile.toString()
+val iniString = IniSerializer.serializeSection(config)
 
 // Deserialize from INI
-val parsedConfig = IniSerializer.deserialize<ServerConfig>(iniFile)
+val parsedConfig = IniSerializer.deserializeSection<ServerConfig>(iniString)
+```
+
+### Using Annotations for Multi-Section File Serialization
+
+```kotlin
+// Define your section classes
+@IniSection("ServerSettings")
+data class ServerConfig(
+    val serverName: String,
+    val maxPlayers: Int,
+    val enablePvP: Boolean
+)
+
+@IniSection("GameSettings")
+data class GameConfig(
+    val difficulty: Float,
+    val allowCaveFlyers: Boolean
+)
+
+// Define a class representing the full INI file
+@IniSerializable
+data class ArktConfig(
+    @IniSection val server: ServerConfig,  // Use section name from the class
+    @IniSection("CustomGameSettings") val game: GameConfig  // Override section name
+)
+
+// Create and populate an instance
+val config = ArktConfig(
+    server = ServerConfig("My Server", 70, true),
+    game = GameConfig(0.8f, true)
+)
+
+// Serialize the full config to INI string
+val iniString = IniSerializer.serialize(config)
+
+// Deserialize from INI string
+val parsedConfig = IniSerializer.deserialize<ArktConfig>(iniString)
 ```
 
 ### Async API
@@ -140,9 +177,20 @@ suspend fun configureServer() {
 - **Structs** - Nested key-value pairs: `key=(subkey1=val1,subkey2=val2)`
 - **Comments** - Lines starting with semicolons `;`
 
+## Annotations
+
+Inisaur provides annotations to configure how classes and properties are serialized:
+
+- `@IniSerializable` - Marks a class as a complete INI file with multiple sections
+- `@IniSection` - Marks a class as an INI section or a property as containing an INI section
+- `@IniProperty` - Customizes property serialization (rename or ignore)
+- `@IniBoolean` - Configures boolean formatting (capitalized or lowercase)
+- `@IniArray` - Specifies array format (comma-separated or repeated lines)
+- `@IniStruct` - Marks a class as a struct value for nested objects
+
 ## Documentation
 
-Complete API documentation is available via Dokka. See the `docs/` directory after building the project.
+Complete API documentation is available via Dokka.
 
 For detailed information about the INI format supported by this library, refer to [spec.md](spec.md).
 

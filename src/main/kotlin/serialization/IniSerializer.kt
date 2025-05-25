@@ -19,18 +19,20 @@ import kotlin.reflect.full.primaryConstructor
  * - Convert Kotlin objects to INI file content using annotations
  * - Parse INI file content into Kotlin objects
  * - Handle various data types including primitives, collections, maps, and nested objects
+ * - Support both single section and multi-section INI files
  *
  * The serialization process is driven by annotations:
- * - [IniSerializable] - Marks a class as serializable to/from INI format
+ * - [IniSerializable] - Marks a class as a full INI file with multiple sections
+ * - [IniSection] - Marks a class as an INI section
  * - [IniProperty] - Configures how a property should be serialized
  * - [IniBoolean] - Configures boolean formatting (capitalized or lowercase)
  * - [IniArray] - Configures how collections should be formatted
  * - [IniStruct] - Marks a nested class as a struct value
  *
- * Example usage:
+ * Example usage for single section:
  * ```kotlin
- * // Define an annotated class
- * @IniSerializable("ServerSettings")
+ * // Define a section class
+ * @IniSection("ServerSettings")
  * data class ServerConfig(
  *     val serverName: String,
  *
@@ -41,15 +43,40 @@ import kotlin.reflect.full.primaryConstructor
  *     val enabledMods: List<String>
  * )
  *
- * // Serialize an object to INI string
+ * // Serialize a section object to INI string
  * val config = ServerConfig("My Server", true, listOf("mod1", "mod2"))
+ * val iniContent = IniSerializer.serializeSection(config)
+ *
+ * // Deserialize INI string back to a section object
+ * val parsedConfig = IniSerializer.deserializeSection<ServerConfig>(iniContent)
+ * ```
+ *
+ * Example usage for multi-section file:
+ * ```kotlin
+ * // Define a full INI file class with multiple sections
+ * @IniSerializable
+ * data class GameConfig(
+ *     val serverSettings: ServerConfig,
+ *     val gameplaySettings: GameplayConfig
+ * )
+ *
+ * // Define section classes
+ * @IniSection("ServerSettings")
+ * data class ServerConfig(val serverName: String, val maxPlayers: Int)
+ *
+ * @IniSection("GameplaySettings")
+ * data class GameplayConfig(val difficulty: Float, val enablePvP: Boolean)
+ *
+ * // Serialize a full INI file object
+ * val config = GameConfig(ServerConfig("My Server", 50), GameplayConfig(0.5f, true))
  * val iniContent = IniSerializer.serialize(config)
  *
- * // Deserialize INI string back to an object
- * val parsedConfig = IniSerializer.deserialize<ServerConfig>(iniContent)
+ * // Deserialize INI string back to a full object
+ * val parsedConfig = IniSerializer.deserialize<GameConfig>(iniContent)
  * ```
  *
  * @see IniSerializable
+ * @see IniSection
  * @see IniProperty
  * @see IniBoolean
  * @see IniArray
@@ -60,17 +87,19 @@ object IniSerializer {
      * Serializes an object to an INI file format string.
      *
      * The object's class must be annotated with [IniSerializable]. Each property of the class
-     * is processed according to its type and any annotations applied to it.
+     * that represents a section (annotated with [IniSection]) will be processed and included
+     * in the output.
      *
      * @param obj The object to serialize
-     * @return The INI file content as a string
+     * @return The complete INI file content as a string
      * @throws IllegalArgumentException if the object's class is not annotated with [IniSerializable]
      *
      * @see IniSerializable
+     * @see IniSection
      */
     @Throws(IllegalArgumentException::class)
     fun <T : Any> serialize(obj: T): String {
-        val iniFile = objectToIniFile(obj)
+        val iniFile = fullObjectToIniFile(obj)
         return iniFile.toString()
     }
 
@@ -85,26 +114,65 @@ object IniSerializer {
      * @throws IllegalArgumentException if the object's class is not annotated with [IniSerializable]
      *
      * @see IniSerializable
+     * @see IniSection
      * @see IniFile
      */
     @Throws(IllegalArgumentException::class)
     fun <T : Any> serializeToIniFile(obj: T): IniFile {
-        return objectToIniFile(obj)
+        return fullObjectToIniFile(obj)
+    }
+
+    /**
+     * Serializes a single section object to an INI file format string.
+     *
+     * The object's class must be annotated with [IniSection]. Each property of the class
+     * is processed according to its type and any annotations applied to it.
+     *
+     * @param obj The section object to serialize
+     * @return The INI file content as a string with a single section
+     * @throws IllegalArgumentException if the object's class is not annotated with [IniSection]
+     *
+     * @see IniSection
+     */
+    @Throws(IllegalArgumentException::class)
+    fun <T : Any> serializeSection(obj: T): String {
+        val iniFile = sectionObjectToIniFile(obj)
+        return iniFile.toString()
+    }
+
+    /**
+     * Serializes a section object to an IniFile instance.
+     *
+     * Similar to [serializeSection], but returns an [IniFile] instance instead of a string,
+     * allowing for further manipulation of the INI data.
+     *
+     * @param obj The section object to serialize
+     * @return An [IniFile] representation of the section
+     * @throws IllegalArgumentException if the object's class is not annotated with [IniSection]
+     *
+     * @see IniSection
+     * @see IniFile
+     */
+    @Throws(IllegalArgumentException::class)
+    fun <T : Any> serializeSectionToIniFile(obj: T): IniFile {
+        return sectionObjectToIniFile(obj)
     }
 
     /**
      * Deserializes an INI string to an object of the specified class.
      *
      * The class must be annotated with [IniSerializable]. The method will attempt to
-     * match properties in the INI file with constructor parameters of the target class.
+     * match sections in the INI file with properties of the target class that are
+     * annotated with [IniSection].
      *
      * @param iniContent The INI content string
      * @param clazz The Kotlin class to deserialize to
      * @return An instance of the specified class
      * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
-     * or if a required section is not found in the INI content
+     * or if required sections are not found in the INI content
      *
      * @see IniSerializable
+     * @see IniSection
      */
     @Throws(IllegalArgumentException::class)
     fun <T : Any> deserialize(iniContent: String, clazz: KClass<T>): T {
@@ -116,7 +184,7 @@ object IniSerializer {
         val parser = Parser(lexer)
         val iniFile = parser.parse()
 
-        return iniFileToObject(iniFile, clazz)
+        return iniFileToFullObject(iniFile, clazz)
     }
 
     /**
@@ -128,14 +196,61 @@ object IniSerializer {
      * @param clazz The Kotlin class to deserialize to
      * @return An instance of the specified class
      * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
-     * or if a required section is not found in the INI file
+     * or if required sections are not found in the INI file
      *
      * @see IniSerializable
+     * @see IniSection
      * @see IniFile
      */
     @Throws(IllegalArgumentException::class)
     fun <T : Any> deserialize(iniFile: IniFile, clazz: KClass<T>): T {
-        return iniFileToObject(iniFile, clazz)
+        return iniFileToFullObject(iniFile, clazz)
+    }
+
+    /**
+     * Deserializes an INI string to a section object of the specified class.
+     *
+     * The class must be annotated with [IniSection]. The method will attempt to
+     * match properties in the INI file with constructor parameters of the target class.
+     *
+     * @param iniContent The INI content string
+     * @param clazz The Kotlin class to deserialize to
+     * @return An instance of the specified class
+     * @throws IllegalArgumentException if the class is not annotated with [IniSection]
+     * or if a required section is not found in the INI content
+     *
+     * @see IniSection
+     */
+    @Throws(IllegalArgumentException::class)
+    fun <T : Any> deserializeSection(iniContent: String, clazz: KClass<T>): T {
+        if (!clazz.hasAnnotation<IniSection>()) {
+            throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSection")
+        }
+
+        val lexer = Lexer(iniContent)
+        val parser = Parser(lexer)
+        val iniFile = parser.parse()
+
+        return iniFileToSectionObject(iniFile, clazz)
+    }
+
+    /**
+     * Deserializes an INI file instance to a section object of the specified class.
+     *
+     * Similar to [deserializeSection], but takes an [IniFile] instance instead of a string.
+     *
+     * @param iniFile The [IniFile] to deserialize
+     * @param clazz The Kotlin class to deserialize to
+     * @return An instance of the specified class
+     * @throws IllegalArgumentException if the class is not annotated with [IniSection]
+     * or if a required section is not found in the INI file
+     *
+     * @see IniSection
+     * @see IniFile
+     */
+    @Throws(IllegalArgumentException::class)
+    fun <T : Any> deserializeSection(iniFile: IniFile, clazz: KClass<T>): T {
+        return iniFileToSectionObject(iniFile, clazz)
     }
 
     /**
@@ -146,7 +261,7 @@ object IniSerializer {
      *
      * Example:
      * ```kotlin
-     * val config = IniSerializer.deserialize<ServerConfig>(iniContent)
+     * val config = IniSerializer.deserialize<GameConfig>(iniContent)
      * ```
      *
      * @param iniContent The INI content string
@@ -176,21 +291,141 @@ object IniSerializer {
     }
 
     /**
-     * Converts an object to an IniFile.
+     * Convenience method to deserialize an INI string to a section object using type inference.
+     *
+     * This inline function allows for a more concise syntax when the target type can be
+     * inferred from the context.
+     *
+     * Example:
+     * ```kotlin
+     * val sectionConfig = IniSerializer.deserializeSection<ServerConfig>(iniContent)
+     * ```
+     *
+     * @param iniContent The INI content string
+     * @return An instance of the inferred type
+     * @throws IllegalArgumentException if the inferred class is not annotated with [IniSection]
+     *
+     * @see IniSection
+     */
+    inline fun <reified T : Any> deserializeSection(iniContent: String): T {
+        return deserializeSection(iniContent, T::class)
+    }
+
+    /**
+     * Convenience method to deserialize an INI file to a section object using type inference.
+     *
+     * Similar to the string version of [deserializeSection], but takes an [IniFile] instance.
+     *
+     * @param iniFile The [IniFile] to deserialize
+     * @return An instance of the inferred type
+     * @throws IllegalArgumentException if the inferred class is not annotated with [IniSection]
+     *
+     * @see IniSection
+     * @see IniFile
+     */
+    inline fun <reified T : Any> deserializeSection(iniFile: IniFile): T {
+        return deserializeSection(iniFile, T::class)
+    }
+
+    /**
+     * Converts a full object to an IniFile.
+     *
+     * This method processes an object annotated with [IniSerializable] and converts
+     * all of its properties annotated with [IniSection] into sections in the INI file.
      *
      * @param obj The object to convert
      * @return An IniFile representation of the object
      * @throws IllegalArgumentException if the object class is not annotated with [IniSerializable]
      */
     @Throws(IllegalArgumentException::class)
-    private fun <T : Any> objectToIniFile(obj: T): IniFile {
+    private fun <T : Any> fullObjectToIniFile(obj: T): IniFile {
         val clazz = obj::class
 
         if (!clazz.hasAnnotation<IniSerializable>()) {
             throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSerializable")
         }
 
-        val sectionAnnotation = clazz.findAnnotation<IniSerializable>()
+        val sections = mutableListOf<Section>()
+
+        // Process all properties that represent sections
+        for (property in clazz.memberProperties) {
+            val value = property.getter.call(obj) ?: continue
+
+            // If the property or property's class has an IniSection annotation
+            val sectionAnnotation = property.findAnnotation<IniSection>()
+                ?: value::class.findAnnotation<IniSection>()
+
+            if (sectionAnnotation != null) {
+                // Convert the property value (which should be an object annotated with @IniSection)
+                // to a Section object
+                try {
+                    val section = processSectionObject(value)
+                    sections.add(section)
+                } catch (e: Exception) {
+                    throw IllegalArgumentException("Failed to process section property '${property.name}': ${e.message}")
+                }
+            }
+        }
+
+        return IniFile(sections)
+    }
+
+    /**
+     * Processes an object annotated with @IniSection and converts it to a Section.
+     *
+     * @param obj The object to convert
+     * @return A Section representation of the object
+     * @throws IllegalArgumentException if the object class is not annotated with [IniSection]
+     */
+    @Throws(IllegalArgumentException::class)
+    private fun processSectionObject(obj: Any): Section {
+        val clazz = obj::class
+
+        val sectionAnnotation = clazz.findAnnotation<IniSection>()
+            ?: throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSection")
+
+        val sectionName = if (sectionAnnotation.sectionName.isNotEmpty()) {
+            sectionAnnotation.sectionName
+        } else {
+            clazz.simpleName ?: "UnnamedSection"
+        }
+
+        val section = Section(sectionName)
+
+        // Process all properties
+        for (property in clazz.memberProperties) {
+            val propertyAnnotation = property.findAnnotation<IniProperty>()
+
+            // Skip ignored properties
+            if (propertyAnnotation?.ignore == true) {
+                continue
+            }
+
+            val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() } ?: property.name
+            val value = property.getter.call(obj)
+
+            processProperty(property, propertyName, value, section)
+        }
+
+        return section
+    }
+
+    /**
+     * Converts a section object to an IniFile.
+     *
+     * @param obj The section object to convert
+     * @return An IniFile representation of the section
+     * @throws IllegalArgumentException if the object class is not annotated with [IniSection]
+     */
+    @Throws(IllegalArgumentException::class)
+    private fun <T : Any> sectionObjectToIniFile(obj: T): IniFile {
+        val clazz = obj::class
+
+        if (!clazz.hasAnnotation<IniSection>()) {
+            throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSection")
+        }
+
+        val sectionAnnotation = clazz.findAnnotation<IniSection>()
         val sectionName = if (sectionAnnotation?.sectionName?.isNotEmpty() == true) {
             sectionAnnotation.sectionName
         } else {
@@ -286,6 +521,7 @@ object IniSerializer {
                     is Float -> section.addKey(propertyName, value)
                     is Boolean -> section.addKey(propertyName, value)
                     null -> section.addKey(propertyName, null as String?)
+                    else -> section.addKey(propertyName, value.toString())
                 }
             }
         }
@@ -343,7 +579,133 @@ object IniSerializer {
     }
 
     /**
-     * Converts an IniFile to an object of the specified class.
+     * Converts an IniFile to a full object of the specified class.
+     *
+     * This method handles the deserialization of INI data into a full Kotlin object,
+     * mapping sections to class properties annotated with [IniSection].
+     *
+     * @param iniFile The IniFile to convert
+     * @param clazz The class to convert to
+     * @return An instance of the specified class
+     * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
+     * or if required sections are not found
+     */
+    @Throws(IllegalArgumentException::class)
+    private fun <T : Any> iniFileToFullObject(iniFile: IniFile, clazz: KClass<T>): T {
+        if (!clazz.hasAnnotation<IniSerializable>()) {
+            throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSerializable")
+        }
+
+        // Prepare constructor parameters
+        val constructor = clazz.primaryConstructor
+            ?: throw IllegalArgumentException("Class ${clazz.simpleName} must have a primary constructor")
+
+        val parameters = constructor.parameters
+        val parameterValues = mutableMapOf<String, Any?>()
+
+        // Process all properties that match constructor parameters
+        for (property in clazz.memberProperties) {
+            val paramName = property.name
+
+            // Find matching constructor parameter
+            val parameter = parameters.find { it.name == paramName }
+                ?: continue
+
+            // Check if this property represents a section
+            val sectionAnnotation = property.findAnnotation<IniSection>()
+
+            if (sectionAnnotation != null) {
+                // Get the parameter type (should be a class annotated with @IniSection)
+                val parameterType = parameter.type.classifier as? KClass<*> ?: continue
+
+                // If the parameter type has @IniSection annotation, process it
+                if (parameterType.hasAnnotation<IniSection>()) {
+                    try {
+                        // Get section name from annotation or use class name
+                        val sectionName = if (sectionAnnotation.sectionName.isNotEmpty()) {
+                            sectionAnnotation.sectionName
+                        } else {
+                            parameterType.findAnnotation<IniSection>()?.sectionName?.takeIf { it.isNotEmpty() }
+                                ?: parameterType.simpleName ?: "UnnamedSection"
+                        }
+
+                        // Check if section exists in INI file
+                        if (iniFile.hasSection(sectionName)) {
+                            val sectionValue = processIniFileSection(iniFile, sectionName, parameterType)
+                            parameterValues[paramName] = sectionValue
+                        } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
+                            // If the parameter is required and non-null, and section is missing, throw exception
+                            throw IllegalArgumentException("Required section '$sectionName' not found in INI file")
+                        }
+                    } catch (e: Exception) {
+                        // Log error or handle exception as needed
+                        if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
+                            // If parameter is required, rethrow exception
+                            throw IllegalArgumentException("Error processing section for parameter '$paramName': ${e.message}")
+                        }
+                    }
+                }
+            } else {
+                // Check if parameter type has @IniSection annotation (for cases where property isn't annotated but type is)
+                val parameterType = parameter.type.classifier as? KClass<*>
+                if (parameterType != null && parameterType.hasAnnotation<IniSection>()) {
+                    try {
+                        val typeSectionAnnotation = parameterType.findAnnotation<IniSection>()
+                        val sectionName = if (typeSectionAnnotation?.sectionName?.isNotEmpty() == true) {
+                            typeSectionAnnotation.sectionName
+                        } else {
+                            parameterType.simpleName ?: "UnnamedSection"
+                        }
+
+                        // Check if section exists in INI file
+                        if (iniFile.hasSection(sectionName)) {
+                            val sectionValue = processIniFileSection(iniFile, sectionName, parameterType)
+                            parameterValues[paramName] = sectionValue
+                        } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
+                            // If parameter is required and section is missing, throw exception
+                            throw IllegalArgumentException("Required section '$sectionName' not found in INI file")
+                        }
+                    } catch (e: Exception) {
+                        // Handle exception
+                        if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
+                            // If parameter is required, rethrow exception
+                            throw IllegalArgumentException("Error processing section for parameter '$paramName': ${e.message}")
+                        }
+                    }
+                }
+            }
+        }
+
+        // Call constructor with parameter values
+        return try {
+            constructor.callBy(parameters.associateWith { parameterValues[it.name] })
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Failed to create instance of ${clazz.simpleName}: ${e.message}")
+        }
+    }
+
+    /**
+     * Process a section from an INI file into an object of the specified class.
+     *
+     * @param iniFile The INI file
+     * @param sectionName The name of the section to process
+     * @param clazz The class to convert to
+     * @return An instance of the specified class
+     */
+    @Throws(IllegalArgumentException::class)
+    private fun <T : Any> processIniFileSection(iniFile: IniFile, sectionName: String, clazz: KClass<T>): T {
+        // Get the section
+        val section = iniFile.getSection(sectionName)
+
+        // Create a new INI file with just this section for processing
+        val sectionIniFile = IniFile(listOf(section))
+
+        // Use existing logic to convert to an object
+        return iniFileToSectionObject(sectionIniFile, clazz)
+    }
+
+    /**
+     * Converts an IniFile to a section object of the specified class.
      *
      * This method handles the deserialization of INI data into a Kotlin object,
      * matching section entries to class properties.
@@ -351,16 +713,16 @@ object IniSerializer {
      * @param iniFile The IniFile to convert
      * @param clazz The class to convert to
      * @return An instance of the specified class
-     * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
+     * @throws IllegalArgumentException if the class is not annotated with [IniSection]
      * or if a required section is not found
      */
     @Throws(IllegalArgumentException::class)
-    private fun <T : Any> iniFileToObject(iniFile: IniFile, clazz: KClass<T>): T {
-        if (!clazz.hasAnnotation<IniSerializable>()) {
-            throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSerializable")
+    private fun <T : Any> iniFileToSectionObject(iniFile: IniFile, clazz: KClass<T>): T {
+        if (!clazz.hasAnnotation<IniSection>()) {
+            throw IllegalArgumentException("Class ${clazz.simpleName} must be annotated with @IniSection")
         }
 
-        val sectionAnnotation = clazz.findAnnotation<IniSerializable>()
+        val sectionAnnotation = clazz.findAnnotation<IniSection>()
         val sectionName = if (sectionAnnotation?.sectionName?.isNotEmpty() == true) {
             sectionAnnotation.sectionName
         } else {
@@ -676,3 +1038,4 @@ object IniSerializer {
         }
     }
 }
+

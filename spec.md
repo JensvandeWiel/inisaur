@@ -122,7 +122,8 @@ The Inisaur library provides a type-safe way to work with this INI format throug
 
 ### 3.1 Annotations
 
-- `@IniSerializable` - Marks a class for INI serialization
+- `@IniSerializable` - Marks a class as a full INI file with multiple sections
+- `@IniSection` - Marks a class as an INI section or a property as containing an INI section
 - `@IniProperty` - Customizes property serialization behavior
 - `@IniBoolean` - Configures boolean value representation
 - `@IniArray` - Configures array representation format
@@ -146,10 +147,49 @@ Different ways values can be stored:
 - `IndexedArray` - Arrays with numeric indices
 - `MapEntry` - Maps with string keys
 
-## 4. Best Practices
+## 4. Multi-Section Serialization
+
+The Inisaur library supports serializing and deserializing complete INI files with multiple sections:
+
+```kotlin
+@IniSection("ServerSettings")
+data class ServerConfig(val serverName: String, val maxPlayers: Int)
+
+@IniSection("GameSettings")
+data class GameConfig(val difficulty: Float)
+
+@IniSerializable
+data class FullConfig(
+    val server: ServerConfig,
+    @IniSection("CustomGameSettings") val gameSettings: GameConfig
+)
+```
+
+When serialized, this produces:
+
+```ini
+[ServerSettings]
+serverName=My Server
+maxPlayers=10
+
+[CustomGameSettings]
+difficulty=0.5
+```
+
+### 4.1 Section Resolution
+
+When deserializing, Inisaur matches sections in the INI file to properties in the class:
+
+1. First, it checks if the property is annotated with `@IniSection` with a section name
+2. If not, it checks if the property type is annotated with `@IniSection`
+3. If a section name isn't provided, it uses the class's simple name
+
+## 5. Best Practices
 
 1. **Be consistent** with your naming conventions and value formats
 2. **Organize related settings** into logical sections
 3. **Use appropriate data types** for each value
 4. **Maintain compatibility** with existing parsers when working with game configuration files
 5. **Validate input** when reading or writing values
+6. **Use annotations** to create clear class hierarchies for your INI structure
+7. **Group related sections** into a single `@IniSerializable` class
