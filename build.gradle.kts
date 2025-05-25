@@ -30,25 +30,48 @@ tasks.withType<DokkaTask>().configureEach {
 }
 
 dependencies {
-
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
+
+    // Add the dokka versioning plugin
+    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:2.0.0")
 }
 
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(21)
 }
 
-val dokkaHtml by tasks.getting(DokkaTask::class)
+val versionString = project.version.toString()
+
+tasks.withType<DokkaTask>().configureEach {
+
+    pluginsMapConfiguration.set(
+        mapOf(
+            "org.jetbrains.dokka.versioning.VersioningPlugin.version" to versionString,
+            "org.jetbrains.dokka.versioning.VersioningPlugin.olderVersionsDir" to "${project.projectDir}/docs"
+        )
+    )
+
+    outputDirectory.set(buildDir.resolve("dokka"))
+}
+
+tasks.register<Copy>("syncDokkaVersionedDocs") {
+    dependsOn(tasks.dokkaHtml)
+
+    val versionDir = file("docs/$versionString")
+    from(tasks.dokkaHtml.get().outputDirectory)
+    into(versionDir)
+}
 
 val javadocJar by tasks.registering(Jar::class) {
-    dependsOn(dokkaHtml)
+    dependsOn(tasks.dokkaHtml)
     archiveClassifier.set("javadoc")
-    from(dokkaHtml.outputDirectory)
+    from(tasks.dokkaHtml.get().outputDirectory)
 }
 
 val sourcesJar by tasks.registering(Jar::class) {
@@ -68,7 +91,6 @@ publishing {
             artifact(javadocJar)
         }
     }
-
     repositories {
         maven {
             name = "GitHubPackages"
