@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'corretto'
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Run tests
+      run: ./gradlew test
+
+  build-and-publish:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'corretto'
+
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Update version in build.gradle.kts
+      run: |
+        sed -i "s/version = \".*\"/version = \"${{ steps.get_version.outputs.VERSION }}\"/" build.gradle.kts
+
+    - name: Build with Gradle
+      run: ./gradlew build
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: build/libs/*.jar
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Publish to Maven Central
+      run: ./gradlew publish
+      env:
+        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
