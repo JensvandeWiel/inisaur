@@ -41,25 +41,33 @@ jobs:
           mkdir -p /tmp/dokka-docs
           cp -r docs/. /tmp/dokka-docs/ || echo "No docs generated yet, continuing anyway"
 
+      # Create a separate gh-pages deployment branch
       - name: Deploy to GitHub Pages
         run: |
+          # Setup git identity for commits
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git fetch origin gh-pages --depth=1 || echo "No gh-pages branch yet"
           
-          # Create or checkout gh-pages branch
+          # Create a fresh temporary directory for gh-pages branch
+          TEMP_GH_PAGES_DIR=$(mktemp -d)
+          
+          # Clone only the gh-pages branch to the temporary directory if it exists
           if git ls-remote --heads origin gh-pages | grep -q gh-pages; then
-            git checkout -B gh-pages origin/gh-pages
+            git clone --branch gh-pages --single-branch https://github.com/${GITHUB_REPOSITORY}.git $TEMP_GH_PAGES_DIR
+            cd $TEMP_GH_PAGES_DIR
           else
-            git checkout --orphan gh-pages
-            git rm -rf .
+            # Initialize a fresh gh-pages branch
+            cd $TEMP_GH_PAGES_DIR
+            git init
+            git checkout -b gh-pages
+            git remote add origin https://github.com/${GITHUB_REPOSITORY}.git
           fi
           
-          # Don't delete existing files, instead only clear non-versioned root files
-          find . -maxdepth 1 -type f -delete || echo "No files to delete"
+          # Remove all existing content but keep .git directory
+          find . -mindepth 1 -maxdepth 1 -not -path "./.git" -exec rm -rf {} \;
           
-          # Copy the full versioned documentation structure
-          cp -r /tmp/dokka-docs/. ./ || echo "No docs to copy"
+          # Copy the documentation from temp directory
+          cp -r /tmp/dokka-docs/. ./
           
           # Create index.html that redirects to latest version
           LATEST_VERSION=$(ls -1 | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?$' | sort -V | tail -n 1 || echo "")
@@ -68,8 +76,9 @@ jobs:
             echo "<h1>Redirecting to latest version ($LATEST_VERSION)...</h1>" >> index.html
           fi
           
+          # Add, commit and push changes
           git add .
           git commit -m "Deploy docs for version ${{ github.event.release.tag_name }}" || echo "No changes to commit"
           
-          # Use --force-with-lease which is safer than plain force but will resolve the non-fast-forward issue
-          git push --force-with-lease origin gh-pages
+          # Push with authentication using GITHUB_TOKEN
+          git push -f "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
