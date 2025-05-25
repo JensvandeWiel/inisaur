@@ -58,7 +58,7 @@ val sourcesJar by tasks.registering(Jar::class) {
 
 publishing {
     publications {
-        create<MavenPublication>("mavenJava") {
+        register<MavenPublication>("gpr") {
             groupId = project.group.toString()
             artifactId = project.name
             version = project.version.toString()
@@ -66,43 +66,16 @@ publishing {
             from(components["java"])
             artifact(sourcesJar)
             artifact(javadocJar)
-
-            pom {
-                name.set("Inisaur")
-                description.set("A Kotlin library for parsing INI files")
-                url.set("https://github.com/JensvandeWiel/inisaur")
-
-                licenses {
-                    license {
-                        name.set("MIT")
-                        url.set("https://opensource.org/licenses/MIT")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("JensvandeWiel")
-                        name.set("Jens van de Wiel")
-                        email.set("jens@wynq.eu")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/JensvandeWiel/inisaur.git")
-                    developerConnection.set("scm:git:ssh://github.com/JensvandeWiel/inisaur.git")
-                    url.set("https://github.com/JensvandeWiel/inisaur")
-                }
-            }
         }
     }
 
     repositories {
         maven {
-            name = "OSSRH"
-            url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/JensvandeWiel/inisaur")
             credentials {
-                username = System.getenv("MAVEN_USERNAME")
-                password = System.getenv("MAVEN_PASSWORD")
+                username = findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
             }
         }
     }

@@ -4,6 +4,11 @@ on:
   release:
     types: [created]
 
+# Add permissions needed for release creation and package publishing
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -57,8 +62,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Publish to Maven Central
+    - name: Publish to GitHub Packages
       run: ./gradlew publish
       env:
-        MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        GITHUB_TOKEN: ${{ github.token }}
