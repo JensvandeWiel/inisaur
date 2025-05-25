@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>Inisaur</title>
+    <link href="images/logo-icon.svg" rel="icon" type="image/svg">
+    <script>var pathToRoot = "";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
+<script type="text/javascript" src="scripts/sourceset_dependencies.js" async="async"></script>
+<link href="styles/style.css" rel="Stylesheet">
+<link href="styles/main.css" rel="Stylesheet">
+<link href="styles/prism.css" rel="Stylesheet">
+<link href="styles/logo-styles.css" rel="Stylesheet">
+<link href="styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="scripts/clipboard.js" async="async"></script>
+<script type="text/javascript" src="scripts/navigation-loader.js" async="async"></script>
+<script type="text/javascript" src="scripts/platform-content-handler.js" async="async"></script>
+<script type="text/javascript" src="scripts/main.js" defer="defer"></script>
+<script type="text/javascript" src="scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="ui-kit/ui-kit.min.js" defer="defer"></script>
+<script type="text/javascript" src="scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
+<link href="styles/multimodule.css" rel="Stylesheet">
+</head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+            <a class="library-name--link" href="index.html">
+                    Inisaur
+            </a>
+        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle"
+                type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+<dokka-template-command data="{&quot;@class&quot;:&quot;org.jetbrains.dokka.base.templating.ReplaceVersionsCommand&quot;,&quot;location&quot;:&quot;index.html&quot;}">0.1.0-rc3</dokka-template-command>        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active=""
+                        data-filter=":dokkaHtml/main">jvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
+                        data-role="dropdown-toggle"
+                        aria-controls="platform-tags-listbox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-label="Toggle source sets"
+                ></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":dokkaHtml/main"
+                                       data-filter=":dokkaHtml/main"/>
+                                <span class="checkbox--icon"></span>
+                                jvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button"
+                    type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
+                        data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    Inisaur
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" id="content" pageIds="Inisaur::////PointingToDeclaration//769193423">
+  <div class="breadcrumbs"></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Inisaur</span></span></h1>
+    <div class="platform-hinted UnderCoverText" data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":dokkaHtml/main"><p class="paragraph">A powerful Kotlin library for parsing, manipulating, and generating INI configuration files, with special support for ARK: Survival Evolved/Ascended configuration formats.</p><p class="paragraph"><a href="http://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/kotlin-1.8.0-blue.svg"></a> <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a> <a href="https://github.com/JensvandeWiel/inisaur/actions/workflows/test.yml"><img alt="Test" src="https://github.com/JensvandeWiel/inisaur/actions/workflows/test.yml/badge.svg"></a></p><h2 class="">Features</h2><ul><li><p class="paragraph">🔍 <strong>Comprehensive Parsing</strong> - Handles standard INI files plus custom ARK/Unreal Engine formats</p></li><li><p class="paragraph">🔄 <strong>Full Type Support</strong> - Native handling of strings, integers, floats, booleans, arrays, and nested structs</p></li><li><p class="paragraph">🧵 <strong>Thread Safety</strong> - Synchronous and asynchronous (suspending) API for concurrent access</p></li><li><p class="paragraph">📝 <strong>Type-Safe Serialization</strong> - Kotlin class annotations for easy serialization/deserialization</p></li><li><p class="paragraph">🛠️ <strong>Rich API</strong> - Intuitive methods for reading, writing, and manipulating INI data</p></li><li><p class="paragraph">🗂️ <strong>Multi-Section Support</strong> - Serialize and deserialize complete INI files with multiple sections</p></li></ul><h2 class="">Installation</h2><h3 class="">Gradle</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">repositories {<br>    mavenCentral()<br>    // Add your repository if published<br>}<br><br>dependencies {<br>    implementation(&quot;eu.wynq:inisaur:&lt;version&gt;&quot;)<br>}</code></pre><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h3 class="">Maven</h3><div class="sample-container"><pre><code class="block lang-xml" theme="idea">&lt;dependency&gt;<br>    &lt;groupId&gt;eu.wynq&lt;/groupId&gt;<br>    &lt;artifactId&gt;inisaur&lt;/artifactId&gt;<br>    &lt;version&gt;&lt;!--&lt;version&gt;--&gt;&lt;/version&gt;<br>&lt;/dependency&gt;</code></pre><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h2 class="">Quick Start</h2><h3 class="">Parse an INI File</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">// Parse from string<br>val iniString = &quot;&quot;&quot;<br>    [ServerSettings]<br>    ServerName=My ARK Server<br>    MaxPlayers=70<br>    EnablePvP=True<br>    <br>    [GameSettings]<br>    Difficulty=1.0<br>    AllowCaveFlyers=True<br>&quot;&quot;&quot;<br><br>val lexer = Lexer(iniString)<br>val parser = Parser(lexer)<br>val iniFile = parser.parse()<br><br>// Access sections and values<br>val serverName = iniFile.getStringValue(&quot;ServerSettings&quot;, &quot;ServerName&quot;)<br>val maxPlayers = iniFile.getIntValue(&quot;ServerSettings&quot;, &quot;MaxPlayers&quot;)<br>val enablePvP = iniFile.getBooleanValue(&quot;ServerSettings&quot;, &quot;EnablePvP&quot;)<br><br>// Modify values<br>iniFile.setValue(&quot;ServerSettings&quot;, &quot;ServerName&quot;, &quot;My Awesome ARK Server&quot;)<br>iniFile.setValue(&quot;GameSettings&quot;, &quot;Difficulty&quot;, 0.8f)<br><br>// Convert back to string<br>val outputString = iniFile.toString()</code></pre><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h3 class="">Using Annotations for Section Serialization</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">// Define your section class<br>@IniSection(&quot;ServerSettings&quot;)<br>data class ServerConfig(<br>    val serverName: String,<br>    <br>    val maxPlayers: Int,<br>    <br>    @IniBoolean(capitalized = true)<br>    val enablePvP: Boolean,<br>    <br>    @IniArray(arrayType = ArrayType.CommaSeparatedArray)<br>    val enabledMods: List&lt;String&gt;,<br>    <br>    @IniProperty(name = &quot;server_password&quot;)<br>    val password: String,<br>    <br>    @IniProperty(ignore = true)<br>    val internalValue: String<br>)<br><br>// Serialize a section to INI<br>val config = ServerConfig(<br>    serverName = &quot;My ARK Server&quot;,<br>    maxPlayers = 70,<br>    enablePvP = true,<br>    enabledMods = listOf(&quot;12345&quot;, &quot;67890&quot;),<br>    password = &quot;secret&quot;,<br>    internalValue = &quot;ignored&quot;<br>)<br><br>val iniString = IniSerializer.serializeSection(config)<br><br>// Deserialize from INI<br>val parsedConfig = IniSerializer.deserializeSection&lt;ServerConfig&gt;(iniString)</code></pre><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h3 class="">Using Annotations for Multi-Section File Serialization</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">// Define your section classes<br>@IniSection(&quot;ServerSettings&quot;)<br>data class ServerConfig(<br>    val serverName: String,<br>    val maxPlayers: Int,<br>    val enablePvP: Boolean<br>)<br><br>@IniSection(&quot;GameSettings&quot;)<br>data class GameConfig(<br>    val difficulty: Float,<br>    val allowCaveFlyers: Boolean<br>)<br><br>// Define a class representing the full INI file<br>@IniSerializable<br>data class ArktConfig(<br>    @IniSection val server: ServerConfig,  // Use section name from the class<br>    @IniSection(&quot;CustomGameSettings&quot;) val game: GameConfig  // Override section name<br>)<br><br>// Create and populate an instance<br>val config = ArktConfig(<br>    server = ServerConfig(&quot;My Server&quot;, 70, true),<br>    game = GameConfig(0.8f, true)<br>)<br><br>// Serialize the full config to INI string<br>val iniString = IniSerializer.serialize(config)<br><br>// Deserialize from INI string<br>val parsedConfig = IniSerializer.deserialize&lt;ArktConfig&gt;(iniString)</code></pre><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h3 class="">Async API</h3><div class="sample-container"><pre><code class="block lang-kotlin" theme="idea">suspend fun configureServer() {<br>    val iniFile = IniFile()<br>    <br>    // All operations have async versions<br>    iniFile.addSectionAsync(&quot;ServerSettings&quot;)<br>    iniFile.setValueAsync(&quot;ServerSettings&quot;, &quot;ServerName&quot;, &quot;Async Server&quot;)<br>    iniFile.setValueAsync(&quot;ServerSettings&quot;, &quot;MaxPlayers&quot;, 100)<br>    <br>    // Access values asynchronously<br>    val serverName = iniFile.getStringValueAsync(&quot;ServerSettings&quot;, &quot;ServerName&quot;)<br>}</code></pre><span class="top-right-position"><span class="copy-icon"></span><div class="copy-popup-wrapper popup-to-left"><span class="copy-popup-icon"></span><span>Content copied to clipboard</span></div></span></div><h2 class="">Supported INI Features</h2><ul><li><p class="paragraph"><strong>Sections</strong> - Standard <code class="lang-kotlin">[Section]</code> format</p></li><li><p class="paragraph"><strong>Basic Types</strong> - Strings, integers, floats, and booleans</p></li><li><p class="paragraph"><strong>Arrays</strong> - Three formats:</p></li><ul><li><p class="paragraph">Comma-separated: <code class="lang-kotlin">key=val1,val2,val3</code></p></li><li><p class="paragraph">Repeated lines: <code class="lang-kotlin">key=val1</code> on multiple lines</p></li><li><p class="paragraph">Indexed: <code class="lang-kotlin">key[0]=val1</code>, <code class="lang-kotlin">key[1]=val2</code></p></li></ul><li><p class="paragraph"><strong>Maps</strong> - Named indexed format: <code class="lang-kotlin">key[name1]=val1</code>, <code class="lang-kotlin">key[name2]=val2</code></p></li><li><p class="paragraph"><strong>Structs</strong> - Nested key-value pairs: <code class="lang-kotlin">key=(subkey1=val1,subkey2=val2)</code></p></li><li><p class="paragraph"><strong>Comments</strong> - Lines starting with semicolons <code class="lang-kotlin">;</code></p></li></ul><h2 class="">Annotations</h2><p class="paragraph">Inisaur provides annotations to configure how classes and properties are serialized:</p><ul><li><p class="paragraph"><code class="lang-kotlin">@IniSerializable</code> - Marks a class as a complete INI file with multiple sections</p></li><li><p class="paragraph"><code class="lang-kotlin">@IniSection</code> - Marks a class as an INI section or a property as containing an INI section</p></li><li><p class="paragraph"><code class="lang-kotlin">@IniProperty</code> - Customizes property serialization (rename or ignore)</p></li><li><p class="paragraph"><code class="lang-kotlin">@IniBoolean</code> - Configures boolean formatting (capitalized or lowercase)</p></li><li><p class="paragraph"><code class="lang-kotlin">@IniArray</code> - Specifies array format (comma-separated or repeated lines)</p></li><li><p class="paragraph"><code class="lang-kotlin">@IniStruct</code> - Marks a class as a struct value for nested objects</p></li></ul><h2 class="">Documentation</h2><p class="paragraph">Complete API documentation is available via Dokka.</p><p class="paragraph">For detailed information about the INI format supported by this library, refer to spec.md.</p><h2 class="">Contributing</h2><p class="paragraph">Contributions are welcome! Feel free to open issues or submit pull requests.</p><ol><li><p class="paragraph">Fork the repository</p></li><li><p class="paragraph">Create your feature branch (<code class="lang-kotlin">git checkout -b feature/amazing-feature</code>)</p></li><li><p class="paragraph">Commit your changes (<code class="lang-kotlin">git commit -m 'Add some amazing feature'</code>)</p></li><li><p class="paragraph">Push to the branch (<code class="lang-kotlin">git push origin feature/amazing-feature</code>)</p></li><li><p class="paragraph">Open a Pull Request</p></li></ol><h2 class="">License</h2><p class="paragraph">This project is licensed under the MIT License - see the LICENSE file for details.</p></div></div>
+  </div>
+  <h2 class="">Packages</h2>
+  <div class="table"><a data-name="-1999595294%2FPackages%2F769193423" anchor-label="[root]" id="-1999595294%2FPackages%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+    <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="-inisaur/[root]/index.html">[root]</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1999595294%2FPackages%2F769193423"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="598781702%2FPackages%2F769193423" anchor-label="annotations" id="598781702%2FPackages%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+    <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="-inisaur/annotations/index.html">annotations</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="598781702%2FPackages%2F769193423"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="1560974822%2FPackages%2F769193423" anchor-label="exceptions" id="1560974822%2FPackages%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+    <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="-inisaur/exceptions/index.html">exceptions</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1560974822%2FPackages%2F769193423"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+<a data-name="640776402%2FPackages%2F769193423" anchor-label="serialization" id="640776402%2FPackages%2F769193423" data-filterable-set=":dokkaHtml/main"></a>
+    <div class="table-row" data-filterable-current=":dokkaHtml/main" data-filterable-set=":dokkaHtml/main">
+      <div>
+        <div class="main-subrow ">
+          <div class=""><span class="inline-flex">
+              <div><a href="-inisaur/serialization/index.html">serialization</a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="640776402%2FPackages%2F769193423"></span>
+                <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+              </span></span></div>
+          <div class="pull-right">
+            <div class="platform-tags no-gutters">
+              <div class="platform-tag jvm-like">jvm</div>
+            </div>
+          </div>
+        </div>
+        <div></div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
