@@ -43,42 +43,44 @@ jobs:
 
       # Create a separate gh-pages deployment branch
       - name: Deploy to GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Setup git identity for commits
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          
+          # Setup git identity for commits - use explicit values
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           # Create a fresh temporary directory for gh-pages branch
           TEMP_GH_PAGES_DIR=$(mktemp -d)
-          
+
           # Clone only the gh-pages branch to the temporary directory if it exists
           if git ls-remote --heads origin gh-pages | grep -q gh-pages; then
-            git clone --branch gh-pages --single-branch https://github.com/${GITHUB_REPOSITORY}.git $TEMP_GH_PAGES_DIR
+            git clone --branch gh-pages --single-branch "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" $TEMP_GH_PAGES_DIR
             cd $TEMP_GH_PAGES_DIR
           else
             # Initialize a fresh gh-pages branch
             cd $TEMP_GH_PAGES_DIR
             git init
             git checkout -b gh-pages
-            git remote add origin https://github.com/${GITHUB_REPOSITORY}.git
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           fi
-          
+
           # Remove all existing content but keep .git directory
           find . -mindepth 1 -maxdepth 1 -not -path "./.git" -exec rm -rf {} \;
-          
+
           # Copy the documentation from temp directory
           cp -r /tmp/dokka-docs/. ./
-          
+
           # Create index.html that redirects to latest version
           LATEST_VERSION=$(ls -1 | grep -E '^[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9]+)?$' | sort -V | tail -n 1 || echo "")
           if [ -n "$LATEST_VERSION" ]; then
             echo "<meta http-equiv=\"refresh\" content=\"0; url='./$LATEST_VERSION/index.html'\" />" > index.html
             echo "<h1>Redirecting to latest version ($LATEST_VERSION)...</h1>" >> index.html
           fi
-          
+
           # Add, commit and push changes
           git add .
           git commit -m "Deploy docs for version ${{ github.event.release.tag_name }}" || echo "No changes to commit"
-          
+
           # Push with authentication using GITHUB_TOKEN
-          git push -f "https://${GITHUB_ACTOR}:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+          git push -f origin gh-pages
