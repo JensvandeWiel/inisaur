@@ -26,6 +26,7 @@ data class Section(val name: String, val entries: List<Entry>? = null) {
                         throw InvalidTypeException("Invalid struct value: $value")
                     }
                 }
+                null -> StringValue(null)
                 is Value -> value
                 else -> throw InvalidTypeException("Unsupported value type: ${value?.javaClass}")
             }
