@@ -34,8 +34,10 @@ jobs:
       - name: Generate versioned Dokka documentation
         run: ./gradlew dokkaHtml syncDokkaVersionedDocs
 
-      - name: Ensure docs directory exists
-        run: mkdir -p docs
+      - name: Save documentation to temp directory
+        run: |
+          mkdir -p /tmp/dokka-docs
+          cp -r docs/. /tmp/dokka-docs/ || echo "No docs generated yet, continuing anyway"
 
       - name: Deploy to GitHub Pages
         run: |
@@ -44,13 +46,7 @@ jobs:
           git fetch
           git checkout gh-pages || git checkout --orphan gh-pages
           rm -rf *
-          # Check if docs directory contains files before copying
-          if [ "$(ls -A docs 2>/dev/null)" ]; then
-            cp -r docs/* ./
-          else
-            # If docs is empty, copy directly from build/dokka
-            cp -r build/dokka/* ./
-          fi
+          cp -r /tmp/dokka-docs/. ./ || echo "No docs to copy"
           git add .
           git commit -m "Deploy docs for version ${{ github.event.release.tag_name }}" || echo "No changes to commit"
           git push origin gh-pages
