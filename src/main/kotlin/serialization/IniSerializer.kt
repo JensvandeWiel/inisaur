@@ -114,9 +114,12 @@ object IniSerializer {
         val arrayAnnotation = property.findAnnotation<IniArray>()
 
         when {
-            // Handle arrays/collections
-            arrayAnnotation != null && value is Collection<*> -> {
-                when (arrayAnnotation.arrayType) {
+            // Handle arrays/collections - with or without annotation
+            value is Collection<*> -> {
+                // If there's no annotation, use CommaSeparatedArray by default
+                val arrayType = arrayAnnotation?.arrayType ?: ArrayType.CommaSeparatedArray
+
+                when (arrayType) {
                     ArrayType.CommaSeparatedArray -> {
                         val valuesList = value.map { convertToIniValue(it) }
                         section.addArrayKey(propertyName, valuesList, ArrayType.CommaSeparatedArray)
@@ -287,14 +290,16 @@ object IniSerializer {
         return when {
             // Handle arrays/collections
             Collection::class.java.isAssignableFrom(returnType.java) -> {
-                if (arrayAnnotation != null) {
-                    try {
-                        val arrayValues = section.getArrayKey(propertyName)
-                        processArrayValues(arrayValues)
-                    } catch (e: Exception) {
-                        emptyList<Any?>()
+                // If there's no annotation, use CommaSeparatedArray by default (same as in serialization)
+                val arrayType = arrayAnnotation?.arrayType ?: ArrayType.CommaSeparatedArray
+
+                try {
+                    val arrayValues = when (arrayType) {
+                        ArrayType.CommaSeparatedArray -> section.getArrayKey(propertyName)
+                        ArrayType.RepeatedLineArray -> section.getArrayKey(propertyName)
                     }
-                } else {
+                    processArrayValues(arrayValues)
+                } catch (e: Exception) {
                     emptyList<Any?>()
                 }
             }

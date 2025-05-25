@@ -8,7 +8,30 @@ data class Plain(override val key: String, val value: Value) : Entry() { // Key=
 }
 data class CommaSeparatedArray(override val key: String, val values: List<Value>) : Entry() { // Key=Value1,Value2
     override fun toString(): String {
-        return "$key=${values.joinToString(",")}"
+        return toCommaSeparatedString()
+    }
+
+    fun toCommaSeparatedString(): String {
+        // For empty arrays, just return the key with equals sign
+        if (values.isEmpty()) {
+            return "$key="
+        }
+
+        // Find the last non-empty value index
+        var lastNonEmptyIndex = values.lastIndex
+        while (lastNonEmptyIndex >= 0 && values[lastNonEmptyIndex].toString().isEmpty()) {
+            lastNonEmptyIndex--
+        }
+
+        // If all values are empty, return just the key
+        if (lastNonEmptyIndex < 0) {
+            return "$key="
+        }
+
+        // Join only up to the last non-empty value
+        // Important: we need to keep empty strings in the middle to preserve positions
+        val valuesToJoin = values.subList(0, lastNonEmptyIndex + 1)
+        return "$key=${valuesToJoin.joinToString(",") { it.toString() }}"
     }
 
     fun toList(): List<Any?> {
@@ -83,3 +106,4 @@ data class MapEntry(override val key: String, val value: IniMap) : Entry() { // 
         }
     }
 }
+

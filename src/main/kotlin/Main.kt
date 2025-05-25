@@ -1,47 +1,70 @@
+import annotations.IniArray
+import annotations.IniBoolean
+import annotations.IniProperty
+import annotations.IniSerializable
+import annotations.IniStruct
+import serialization.IniSerializer
+
+@IniStruct
+data class Location(
+    val x: Float,
+    val y: Float,
+    val z: Float,
+    val otherLocation : Location? = null
+)
+
+// Define a serializable class
+@IniSerializable(sectionName = "GameSettings")
+data class GameSettings(
+    val playerName: String,
+
+    @IniBoolean(capitalized = true)
+    val enableTutorials: Boolean,
+
+    @IniProperty(name = "Volume")
+    val soundVolume: Float? = null,
+
+    @IniArray(arrayType = ArrayType.CommaSeparatedArray)
+    val enabledFeatures: List<String>,
+
+    @IniArray(arrayType = ArrayType.RepeatedLineArray)
+    val recentMaps: List<String>,
+
+    val spawnLocation: Location,
+
+    val checkpoints: Map<Int, String?>,
+
+    val map: Map<String, Any?> = mapOf("key1" to null, "key2" to "value2"),
+
+    @IniArray(arrayType = ArrayType.CommaSeparatedArray)
+    val array: List<Any?> = listOf(1, 2, 3, "a", "b", "c"),
+
+    @IniProperty(name = "TemporaryData")
+    val temporaryData: String? = null
+)
+
 fun main() {
-    val iniSection = Section("ExampleSection")
-    iniSection.addKey("stringKey", "stringValue")
-    iniSection.addKey("intKey", 42)
-    iniSection.addKey("floatKey", 3.14f)
-    iniSection.addKey("boolKey", true, capitalized = false)
-    iniSection.addKey("structKey", mapOf("nestedKey" to "nestedValue"))
-    iniSection.addKey("nullKey", null as String?)
-    iniSection.addKey("emptyStructKey", emptyMap<String, Any>())
-    iniSection.addIndexedArrayKey("indexedArrayKey", mapOf(1 to "first", 2 to "second", 4 to "fourth"))
-    iniSection.addArrayKey("arrayKey", listOf("item1", "item2", "item3"))
-    iniSection.addArrayKey("repeatedArrayKey", listOf("itemA", "itemB", "itemC"), ArrayType.RepeatedLineArray)
-    iniSection.addMapKey("mapKey", mapOf("key1" to "value1", "key2" to 42))
-    iniSection.addMapKey("nestedMapKey", mapOf("nestedKey1" to "nestedValue1", "nestedKey2" to 123))
-    iniSection.addKey("boolCapitalizedKey", true, capitalized = true)
-    println(iniSection)
-    iniSection.setKey("stringKey", "newValue")
-    iniSection.setKey("emptyStructKey", mapOf("newKey" to "newValue"))
-    println("After updating keys:")
-    println(iniSection)
-}
+    // Example usage of the GameSettings class
+    val settings = GameSettings(
+        playerName = "Player1",
+        enableTutorials = true,
+        enabledFeatures = listOf("Feature1", "Feature2"),
+        recentMaps = listOf("Map1", "Map2"),
+        spawnLocation = Location(
+            100.0f, 200.0f, 300.0f,
+            otherLocation = Location(50.0f, 75.0f, 125.0f)
+        ),
+        checkpoints = mapOf(1 to "Checkpoint1", 2 to null)
+    )
 
-fun displayKeyType(section: Section, key: String) {
-    try {
-        val value = section.getKey(key)
-        println("$key: ${value::class.java.simpleName} (${value::class.qualifiedName})")
-    } catch (e: Exception) {
-        println("$key: Error - ${e.message}")
-    }
-}
+    // Here you would typically serialize `settings` to an INI format
+    println(settings)
 
-fun displayMapTypes(map: Map<String, Any?>, indent: String = "  ") {
-    map.forEach { (key, value) ->
-        when (value) {
-            null -> println("${indent}$key: null")
-            is Map<*, *> -> {
-                println("${indent}$key: Map (${value::class.qualifiedName})")
-                @Suppress("UNCHECKED_CAST")
-                displayMapTypes(value as Map<String, Any?>, "$indent  ")
-            }
-            else -> {
-                val typeName = value::class.qualifiedName ?: value.javaClass.name
-                println("${indent}$key: ${value::class.java.simpleName} ($typeName)")
-            }
-        }
-    }
+    val iniString = IniSerializer.serialize(settings)
+    println("Serialized INI:\n$iniString")
+
+    // And then deserialize it back to a GameSettings object
+    val deserializedSettings = IniSerializer.deserialize<GameSettings>(iniString)
+    println("Deserialized GameSettings:\n$deserializedSettings")
+
 }
