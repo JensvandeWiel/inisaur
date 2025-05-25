@@ -5,14 +5,22 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-data class IniFile(val sections: List<Section>) {
-    private val _sections: MutableList<Section> = sections.toMutableList()
+class IniFile {
+    private val _sections: MutableList<Section>
     private val mutex = Mutex()
     private val rwLock = ReentrantReadWriteLock()
+
+    constructor(sections: List<Section>) {
+        _sections = sections.toMutableList()
+    }
+    constructor() : this(emptyList())
 
     override fun toString(): String {
         return rwLock.read { _sections.joinToString("\n\n") }
     }
+
+    val sections: List<Section>
+        get() = rwLock.read { _sections.toList() }
 
     /**
      * Gets a section by name (blocking).

@@ -1,107 +1,155 @@
-This document defines the configuration file format used to configure **ARK: Survival Evolved** and **ARK: Survival Ascended** servers and clients.
+# INI File Format Specification
 
-ARK’s INI format is a customized version of the [Unreal Engine INI specification](https://dev.epicgames.com/documentation/en-us/unreal-engine/configuration-files-in-unreal-engine#syntax), with added support for structs and (named) indexed arrays.
+Inisaur is designed to work with a customized version of the INI format that extends the [standard INI specification](https://en.wikipedia.org/wiki/INI_file) with additional data structures commonly used in game configuration files, particularly those in Unreal Engine-based games like **ARK: Survival Evolved** and **ARK: Survival Ascended**.
 
-> Note: This specification only includes the features relevant to ARK. Some Unreal Engine configuration features are not used in practice and are therefore excluded.
+This specification documents the syntax and features supported by the Inisaur library.
 
----
-## 1. Syntax
+## 1. Basic Structure
 
-### 1.1 File Structure
-INI files are structured into sections, each containing key-value pairs:
+### 1.1 Sections and Key-Value Pairs
+
+INI files are organized into sections, with each section containing key-value pairs:
+
 ```ini
-[Section1]
+[SectionName]
 Key1=Value1
 Key2=Value2
 
-[Section2]
+[AnotherSection]
 Key3=Value3
 ```
 
-- Every key-value pair must belong to a `[Section]`.
-- Each pair must be on a single line.
-- The value may be empty:
+Rules:
+- Every key-value pair must belong to a section
+- Each pair must appear on its own line
+- Values may be empty: `Key=`
+- Section names and keys are case-sensitive
+
+### 1.2 Comments
+
+Comments start with a semicolon (`;`) and continue to the end of the line:
+
 ```ini
+; This is a comment
 [Section]
-LogTemp=
-```
-### 1.2 Section Names
-- Section names are case-sensitive alphabetic strings.
-- You can use any name, but it must not include special characters such as `=`, `[`, or `]`.
-### 1.3 Key Names
-Keys are case-sensitive and may contain the following characters:
-
-| Allowed Characters |
-| ------------------ |
-| A–Z (uppercase)    |
-| a–z (lowercase)    |
-| 0–9 (digits)       |
-| _ (underscore)     |
-Keys may also include array brackets `[]` at the end, with either an index or a named index:
-- `Key[0]`
-- `Key[SomeName]`
-### 1.4 Value Types
-Unlike standard INI files, ARK supports a variety of value types.
-#### 1.4.1 Booleans
-- Can be `True` / `False` or `true` / `false`, depending on the key.
-- You must not mix the cases; follow the required format for each specific key.
-#### 1.4.2 Integers
-- Whole numbers such as `42` or `-42`.
-#### 1.4.3 Floats
-- Decimal numbers such as `1.5`.
-#### 1.4.4 Strings
-- Plain text like `Text`.
-- Text with spaces must be enclosed in quotes: `"Spaced Text"`.
-- Escape special characters inside quoted strings using a backslash `\`.
-#### 1.4.5 Arrays
-ARK INI supports different ways to define arrays.
-##### 1.4.5.1 Comma-Delimited Arrays
-```ini
-Key=Val1,Val2,Val3
-```
-##### 1.4.5.2 Repeated Line Arrays
-In this case the index is implicit and the order of the lines matters:
-```ini
-Key=Val1
-Key=Val2
-Key=Val3
-```
-##### 1.4.5.3 Indexed Arrays
-```ini
-Key[0]=Val1
-Key[1]=Val2
-Key[2]=Val3
-```
-##### 1.4.5.4 Named Indexed Arrays (Map)
-```ini
-Key[Key1]=Val1
-Key[Key2]=Val2
-Key[Key3]=Val3
+; Another comment
+Key=Value
 ```
 
-#### 1.4.6 Structs
-A struct is a value composed of nested key-value pairs:
-```ini
-Key=(SubKey1=Val1,SubKey2=Val2)
-```
-- Sub-keys inside a struct can use any supported type described in section 1.4.
-- Structs can be nested
-- Ensure the syntax is exact; malformed structs can prevent the config from loading.
-### 1.5 Comments
-- Comments start with `;`.
-- Inline comments are not allowed.
-  Examples:
-```ini
-; This is a valid comment
-Key=True  ; ❌ Invalid — inline comments are not supported
-```
-### 1.6 Notes
-#### 1.6.1 Validation
-- Invalid keys are silently ignored.
-- Incorrect value types may cause unpredictable behavior.
-- Syntax errors—especially in nested structures—can prevent the configuration from being loaded entirely.
-## 2. Sources
+Note: Inline comments (comments on the same line as a key-value pair) are not supported.
 
-This specification is derived from both the Unreal Engine documentation and community documentation for ARK.
-- [Unreal Engine Configuration File Syntax](https://dev.epicgames.com/documentation/en-us/unreal-engine/configuration-files-in-unreal-engine#syntax)
-- [ARK Wiki – Server Configuration](https://ark.wiki.gg/wiki/Server_configuration)
+## 2. Data Types
+
+### 2.1 Basic Types
+
+#### 2.1.1 Strings
+
+```ini
+PlainString=Value
+QuotedString="String with spaces or special characters"
+EscapedQuotes="String with \"quotes\" inside"
+```
+
+Strings with spaces or special characters should be enclosed in double quotes. Within quoted strings, you can escape characters using a backslash (`\`).
+
+#### 2.1.2 Numbers
+
+- **Integers**: `Count=42`
+- **Negative integers**: `Offset=-10`
+- **Floating-point**: `Scale=1.5`
+
+#### 2.1.3 Booleans
+
+Boolean values can be represented in two forms:
+- Capitalized: `EnableFeature=True` or `EnableFeature=False`
+- Lowercase: `enableFeature=true` or `enableFeature=false`
+
+The capitalization style should be consistent within your application.
+
+### 2.2 Complex Types
+
+#### 2.2.1 Arrays
+
+Inisaur supports three array formats:
+
+1. **Comma-separated arrays**:
+   ```ini
+   Colors=Red,Green,Blue
+   Numbers=1,2,3,4,5
+   ```
+
+2. **Repeated key arrays**:
+   ```ini
+   Item=Sword
+   Item=Shield
+   Item=Potion
+   ```
+
+3. **Indexed arrays**:
+   ```ini
+   Inventory[0]=Sword
+   Inventory[1]=Shield
+   Inventory[2]=Potion
+   ```
+
+#### 2.2.2 Maps (Named Index Arrays)
+
+Maps are represented using keys with named indices:
+
+```ini
+PlayerData[Alice]=100
+PlayerData[Bob]=85
+PlayerData[Charlie]=92
+```
+
+#### 2.2.3 Structs
+
+Structs allow nesting key-value pairs within a single value:
+
+```ini
+PlayerCharacter=(Name="Alice",Health=100,Position=(X=0,Y=0,Z=0))
+```
+
+Structs:
+- Are enclosed in parentheses
+- Contain key-value pairs separated by commas
+- Can be nested (structs within structs)
+- Can contain any valid value type
+
+## 3. Usage with Inisaur
+
+The Inisaur library provides a type-safe way to work with this INI format through its API and annotation system.
+
+### 3.1 Annotations
+
+- `@IniSerializable` - Marks a class for INI serialization
+- `@IniProperty` - Customizes property serialization behavior
+- `@IniBoolean` - Configures boolean value representation
+- `@IniArray` - Configures array representation format
+- `@IniStruct` - Marks a class as a struct value
+
+### 3.2 Value Types
+
+Inisaur maps INI values to Kotlin types:
+- `StringValue` - Represents string values
+- `IntValue` - Represents integer values
+- `FloatValue` - Represents floating-point values
+- `BoolValue` - Represents boolean values
+- `StructValue` - Represents structured values
+
+### 3.3 Entry Types
+
+Different ways values can be stored:
+- `Plain` - Simple key-value pairs
+- `CommaSeparatedArray` - Arrays as comma-separated values
+- `RepeatedLineArray` - Arrays as repeated keys
+- `IndexedArray` - Arrays with numeric indices
+- `MapEntry` - Maps with string keys
+
+## 4. Best Practices
+
+1. **Be consistent** with your naming conventions and value formats
+2. **Organize related settings** into logical sections
+3. **Use appropriate data types** for each value
+4. **Maintain compatibility** with existing parsers when working with game configuration files
+5. **Validate input** when reading or writing values

@@ -121,7 +121,7 @@ class Parser(private val lexer: Lexer) {
         // Key or Key[0] or Key[Name]
         val keyToken = currentToken
         if (keyToken.type != TokenType.KEY && keyToken.type != TokenType.NUMERIC_INDEX
-            && keyToken.type != TokenType.NAMED_INDEX && keyToken.type != TokenType.ARRAY_INDEX) {
+            && keyToken.type != TokenType.NAMED_INDEX) {
             while (currentToken.type != TokenType.NEWLINE && currentToken.type != TokenType.EOF) eat(currentToken.type)
             if (currentToken.type == TokenType.NEWLINE) eat(TokenType.NEWLINE)
             return null
@@ -130,14 +130,12 @@ class Parser(private val lexer: Lexer) {
         val rawKey = keyToken.value ?: ""
         val isNumericIndexed = keyToken.type == TokenType.NUMERIC_INDEX
         val isNamedIndexed = keyToken.type == TokenType.NAMED_INDEX
-        // Legacy support for ARRAY_INDEX
-        val isLegacyIndexed = keyToken.type == TokenType.ARRAY_INDEX
 
         // Extract base key and index if needed
         val key: String
         var index: String? = null
 
-        if (isNumericIndexed || isNamedIndexed || isLegacyIndexed) {
+        if (isNumericIndexed || isNamedIndexed) {
             val indexStart = rawKey.indexOf('[')
             val indexEnd = rawKey.lastIndexOf(']')
 
@@ -182,15 +180,6 @@ class Parser(private val lexer: Lexer) {
                 // Key[0]=Value
                 val indexNum = index.toInt()
                 IndexedArray(key, mapOf(indexNum to values.first()))
-            }
-            isLegacyIndexed && index != null -> {
-                // Handle legacy ARRAY_INDEX based on whether index is numeric
-                if (index.toIntOrNull() != null) {
-                    val indexNum = index.toInt()
-                    IndexedArray(key, mapOf(indexNum to values.first()))
-                } else {
-                    MapEntry(key, mapOf(index to values.first()))
-                }
             }
             values.size > 1 -> {
                 // Key=Val1,Val2

@@ -13,16 +13,60 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.full.primaryConstructor
 
 /**
- * The main class for serializing and deserializing objects to and from INI format.
+ * The serialization engine for converting between Kotlin objects and INI file format.
+ *
+ * IniSerializer provides functionality to:
+ * - Convert Kotlin objects to INI file content using annotations
+ * - Parse INI file content into Kotlin objects
+ * - Handle various data types including primitives, collections, maps, and nested objects
+ *
+ * The serialization process is driven by annotations:
+ * - [IniSerializable] - Marks a class as serializable to/from INI format
+ * - [IniProperty] - Configures how a property should be serialized
+ * - [IniBoolean] - Configures boolean formatting (capitalized or lowercase)
+ * - [IniArray] - Configures how collections should be formatted
+ * - [IniStruct] - Marks a nested class as a struct value
+ *
+ * Example usage:
+ * ```kotlin
+ * // Define an annotated class
+ * @IniSerializable("ServerSettings")
+ * data class ServerConfig(
+ *     val serverName: String,
+ *
+ *     @IniBoolean(capitalized = true)
+ *     val enablePvP: Boolean,
+ *
+ *     @IniArray(arrayType = ArrayType.CommaSeparatedArray)
+ *     val enabledMods: List<String>
+ * )
+ *
+ * // Serialize an object to INI string
+ * val config = ServerConfig("My Server", true, listOf("mod1", "mod2"))
+ * val iniContent = IniSerializer.serialize(config)
+ *
+ * // Deserialize INI string back to an object
+ * val parsedConfig = IniSerializer.deserialize<ServerConfig>(iniContent)
+ * ```
+ *
+ * @see IniSerializable
+ * @see IniProperty
+ * @see IniBoolean
+ * @see IniArray
+ * @see IniStruct
  */
 object IniSerializer {
     /**
      * Serializes an object to an INI file format string.
-     * The object class must be annotated with @IniSerializable.
+     *
+     * The object's class must be annotated with [IniSerializable]. Each property of the class
+     * is processed according to its type and any annotations applied to it.
      *
      * @param obj The object to serialize
      * @return The INI file content as a string
-     * @throws IllegalArgumentException if the object class is not annotated with @IniSerializable
+     * @throws IllegalArgumentException if the object's class is not annotated with [IniSerializable]
+     *
+     * @see IniSerializable
      */
     @Throws(IllegalArgumentException::class)
     fun <T : Any> serialize(obj: T): String {
@@ -31,13 +75,36 @@ object IniSerializer {
     }
 
     /**
+     * Serializes an object to an IniFile instance.
+     *
+     * Similar to [serialize], but returns an [IniFile] instance instead of a string,
+     * allowing for further manipulation of the INI data.
+     *
+     * @param obj The object to serialize
+     * @return An [IniFile] representation of the object
+     * @throws IllegalArgumentException if the object's class is not annotated with [IniSerializable]
+     *
+     * @see IniSerializable
+     * @see IniFile
+     */
+    @Throws(IllegalArgumentException::class)
+    fun <T : Any> serializeToIniFile(obj: T): IniFile {
+        return objectToIniFile(obj)
+    }
+
+    /**
      * Deserializes an INI string to an object of the specified class.
-     * The class must be annotated with @IniSerializable.
+     *
+     * The class must be annotated with [IniSerializable]. The method will attempt to
+     * match properties in the INI file with constructor parameters of the target class.
      *
      * @param iniContent The INI content string
-     * @param clazz The class to deserialize to
+     * @param clazz The Kotlin class to deserialize to
      * @return An instance of the specified class
-     * @throws IllegalArgumentException if the class is not annotated with @IniSerializable
+     * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
+     * or if a required section is not found in the INI content
+     *
+     * @see IniSerializable
      */
     @Throws(IllegalArgumentException::class)
     fun <T : Any> deserialize(iniContent: String, clazz: KClass<T>): T {
@@ -53,14 +120,59 @@ object IniSerializer {
     }
 
     /**
-     * Convenience method to deserialize an INI string to an object of the specified class.
+     * Deserializes an INI file instance to an object of the specified class.
+     *
+     * Similar to [deserialize], but takes an [IniFile] instance instead of a string.
+     *
+     * @param iniFile The [IniFile] to deserialize
+     * @param clazz The Kotlin class to deserialize to
+     * @return An instance of the specified class
+     * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
+     * or if a required section is not found in the INI file
+     *
+     * @see IniSerializable
+     * @see IniFile
+     */
+    @Throws(IllegalArgumentException::class)
+    fun <T : Any> deserialize(iniFile: IniFile, clazz: KClass<T>): T {
+        return iniFileToObject(iniFile, clazz)
+    }
+
+    /**
+     * Convenience method to deserialize an INI string to an object using type inference.
+     *
+     * This inline function allows for a more concise syntax when the target type can be
+     * inferred from the context.
+     *
+     * Example:
+     * ```kotlin
+     * val config = IniSerializer.deserialize<ServerConfig>(iniContent)
+     * ```
      *
      * @param iniContent The INI content string
-     * @return An instance of the specified class
-     * @throws IllegalArgumentException if the class is not annotated with @IniSerializable
+     * @return An instance of the inferred type
+     * @throws IllegalArgumentException if the inferred class is not annotated with [IniSerializable]
+     *
+     * @see IniSerializable
      */
     inline fun <reified T : Any> deserialize(iniContent: String): T {
         return deserialize(iniContent, T::class)
+    }
+
+    /**
+     * Convenience method to deserialize an INI file to an object using type inference.
+     *
+     * Similar to the string version of [deserialize], but takes an [IniFile] instance.
+     *
+     * @param iniFile The [IniFile] to deserialize
+     * @return An instance of the inferred type
+     * @throws IllegalArgumentException if the inferred class is not annotated with [IniSerializable]
+     *
+     * @see IniSerializable
+     * @see IniFile
+     */
+    inline fun <reified T : Any> deserialize(iniFile: IniFile): T {
+        return deserialize(iniFile, T::class)
     }
 
     /**
@@ -68,7 +180,7 @@ object IniSerializer {
      *
      * @param obj The object to convert
      * @return An IniFile representation of the object
-     * @throws IllegalArgumentException if the object class is not annotated with @IniSerializable
+     * @throws IllegalArgumentException if the object class is not annotated with [IniSerializable]
      */
     @Throws(IllegalArgumentException::class)
     private fun <T : Any> objectToIniFile(obj: T): IniFile {
@@ -109,6 +221,13 @@ object IniSerializer {
 
     /**
      * Processes a property and adds it to the section.
+     *
+     * This method handles different property types and applies appropriate annotations.
+     *
+     * @param property The Kotlin property to process
+     * @param propertyName The name to use for the property in the INI file
+     * @param value The value of the property
+     * @param section The section to add the property to
      */
     private fun processProperty(property: KProperty1<*, *>, propertyName: String, value: Any?, section: Section) {
         val arrayAnnotation = property.findAnnotation<IniArray>()
@@ -174,6 +293,12 @@ object IniSerializer {
 
     /**
      * Converts an object to a map for struct serialization.
+     *
+     * This method transforms an object annotated with [IniStruct] into a map of
+     * property names to values, which can be serialized as a struct in INI format.
+     *
+     * @param obj The object to convert
+     * @return A map representation of the object
      */
     private fun convertObjectToStructMap(obj: Any): Map<String, Any?> {
         val result = mutableMapOf<String, Any?>()
@@ -204,6 +329,9 @@ object IniSerializer {
 
     /**
      * Helper method to convert a value to an appropriate INI value.
+     *
+     * @param value The value to convert
+     * @return The converted value suitable for INI representation
      */
     private fun convertToIniValue(value: Any?): Any? {
         return when (value) {
@@ -217,10 +345,14 @@ object IniSerializer {
     /**
      * Converts an IniFile to an object of the specified class.
      *
+     * This method handles the deserialization of INI data into a Kotlin object,
+     * matching section entries to class properties.
+     *
      * @param iniFile The IniFile to convert
      * @param clazz The class to convert to
      * @return An instance of the specified class
-     * @throws IllegalArgumentException if the class is not annotated with @IniSerializable
+     * @throws IllegalArgumentException if the class is not annotated with [IniSerializable]
+     * or if a required section is not found
      */
     @Throws(IllegalArgumentException::class)
     private fun <T : Any> iniFileToObject(iniFile: IniFile, clazz: KClass<T>): T {
@@ -279,6 +411,14 @@ object IniSerializer {
 
     /**
      * Extracts a value from a section based on property annotations.
+     *
+     * This method handles the extraction of values from the INI section, taking into
+     * account property types and annotations.
+     *
+     * @param section The section to extract values from
+     * @param propertyName The name of the property in the INI file
+     * @param property The Kotlin property to extract value for
+     * @return The extracted value, converted to the appropriate type
      */
     private fun extractValueFromSection(section: Section, propertyName: String, property: KProperty1<*, *>): Any? {
         val returnType = property.returnType.classifier as? KClass<*> ?: return null
@@ -385,7 +525,12 @@ object IniSerializer {
 
     /**
      * Process map values to convert empty strings to nulls for maps that can contain nullable values.
+     *
      * This is always applied to maps with Any? or String? value types to ensure empty strings are converted to nulls.
+     *
+     * @param map The map to process
+     * @param forceNullConversion Whether to force conversion of empty strings to nulls
+     * @return The processed map
      */
     private fun <K> processMapValues(map: Map<K, Any?>, forceNullConversion: Boolean = true): Map<K, Any?> {
         return map.mapValues { (_, value) ->
@@ -404,6 +549,9 @@ object IniSerializer {
 
     /**
      * Process array values to convert empty strings to nulls.
+     *
+     * @param list The list to process
+     * @return The processed list
      */
     private fun processArrayValues(list: List<Any?>): List<Any?> {
         return list.map { value ->
@@ -420,6 +568,13 @@ object IniSerializer {
 
     /**
      * Creates an instance of a struct class from a map.
+     *
+     * This method constructs an object of a class annotated with [IniStruct]
+     * using the provided property values.
+     *
+     * @param clazz The class to instantiate
+     * @param structMap The map of property names to values
+     * @return The created instance, or null if instantiation failed
      */
     private fun <T : Any> createStructInstance(clazz: KClass<T>, structMap: Map<String, Any?>): T? {
         val constructor = clazz.primaryConstructor ?: return null

@@ -5,14 +5,26 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
-data class Section(val name: String, val entries: List<Entry>? = null) {
-    private val _entries: MutableList<Entry> = entries?.toMutableList() ?: mutableListOf()
+class Section(val name: String) {
+    private val _entries: MutableList<Entry> = mutableListOf()
     private val mutex = Mutex()
     private val rwLock = ReentrantReadWriteLock()
+
+    constructor(name: String, entries: List<Entry>?) : this(name) {
+        if (entries != null) {
+            _entries.addAll(entries)
+        }
+    }
 
     override fun toString(): String {
         return rwLock.read { "[$name]\n" + _entries.joinToString("\n") }
     }
+
+    /**
+     * Returns all entries in this section. This is a read-only list of entries. And will not modify the original section.
+     */
+    val entries: List<Entry>
+        get() = rwLock.read { _entries.toList() }
 
     /**
      * Converts a Map<String, Any?> to a StructValue.

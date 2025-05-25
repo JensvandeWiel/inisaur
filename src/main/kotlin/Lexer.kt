@@ -1,3 +1,29 @@
+/**
+ * The lexical analyzer (lexer) for INI files.
+ *
+ * The lexer transforms a string input into a sequence of tokens, identifying language elements
+ * like section headers, keys, values, and special characters according to the INI file syntax.
+ * It handles different value types including strings, numbers, booleans, and structured data.
+ *
+ * Example:
+ * ```kotlin
+ * val input = """
+ *   [ServerSettings]
+ *   ServerName=My Server
+ *   MaxPlayers=50
+ *   EnablePvP=True
+ * """
+ * val lexer = Lexer(input)
+ * val tokens = mutableListOf<Token>()
+ * var token = lexer.nextToken()
+ * while (token.type != TokenType.EOF) {
+ *   tokens.add(token)
+ *   token = lexer.nextToken()
+ * }
+ * ```
+ *
+ * @property input The INI file content as a string to be tokenized
+ */
 class Lexer(private val input: String) {
     private var position: Int = 0
     private var line: Int = 1
@@ -7,6 +33,10 @@ class Lexer(private val input: String) {
     private val currentChar: Char
         get() = if (position < input.length) input[position] else '\u0000'
 
+    /**
+     * Advances the current position in the input string.
+     * Increments line number on newline characters and resets column position.
+     */
     fun advance() {
         if (currentChar == '\n') {
             line++
@@ -17,22 +47,43 @@ class Lexer(private val input: String) {
         position++
     }
 
+    /**
+     * Peeks at the next character in the input without advancing the position.
+     *
+     * @return The next character or null character if at the end of input
+     */
     fun peek(): Char {
         return if (position + 1 < input.length) input[position + 1] else '\u0000'
     }
 
+    /**
+     * Skips whitespace characters (except newlines).
+     */
     fun skipWhitespace() {
         while (currentChar.isWhitespace() && currentChar != '\n') {
             advance()
         }
     }
 
+    /**
+     * Skips a comment (from semicolon to end of line).
+     */
     fun skipComment() {
         while (currentChar != '\n' && currentChar != '\u0000') {
             advance()
         }
     }
 
+    /**
+     * Reads the next token from the input string.
+     *
+     * This method identifies and categorizes the next meaningful element in the input,
+     * advancing the position as necessary. It handles section headers, key-value pairs,
+     * structured data, arrays, and special characters.
+     *
+     * @return The next token in the input
+     * @throws IllegalArgumentException if the input contains malformed tokens (like unterminated quoted strings)
+     */
     fun nextToken(): Token {
         while (currentChar != '\u0000') {
             val startLine = line
@@ -117,6 +168,12 @@ class Lexer(private val input: String) {
         return Token(TokenType.EOF, null, line, column)
     }
 
+    /**
+     * Reads a section header (e.g., "[SectionName]").
+     *
+     * @return A token representing the section header (without the brackets)
+     * @throws IllegalArgumentException if the section header is unterminated
+     */
     private fun readSectionHeader(): Token {
         val startLine = line
         val startCol = column
@@ -136,6 +193,11 @@ class Lexer(private val input: String) {
         return Token(TokenType.SECTION_HEADER, sb.toString().trim(), startLine, startCol)
     }
 
+    /**
+     * Reads a key, which may include an array index notation.
+     *
+     * @return A token representing a key, numeric indexed key, or named indexed key
+     */
     private fun readKey(): Token {
         val startLine = line
         val startCol = column
@@ -178,6 +240,12 @@ class Lexer(private val input: String) {
         return Token(TokenType.KEY, sb.toString(), startLine, startCol)
     }
 
+    /**
+     * Reads a quoted string value, handling escape sequences.
+     *
+     * @return A token representing a string value
+     * @throws IllegalArgumentException if the string is unterminated
+     */
     private fun readQuotedString(): Token {
         val startLine = line
         val startCol = column
@@ -208,6 +276,11 @@ class Lexer(private val input: String) {
         return Token(TokenType.VALUE_STRING, sb.toString(), startLine, startCol)
     }
 
+    /**
+     * Reads an unquoted value, which could be a string, boolean, or numeric value.
+     *
+     * @return A token representing the value with its inferred type
+     */
     private fun readUnquotedValue(): Token {
         val startLine = line
         val startCol = column
@@ -234,6 +307,11 @@ class Lexer(private val input: String) {
         }
     }
 
+    /**
+     * Reads a numeric value (integer or float).
+     *
+     * @return A token representing an integer or float value
+     */
     private fun readNumber(): Token {
         val startLine = line
         val startCol = column
