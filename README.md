@@ -4,6 +4,7 @@ A powerful Kotlin library for parsing, manipulating, and generating INI configur
 
 [![Kotlin](https://img.shields.io/badge/kotlin-1.8.0-blue.svg)](http://kotlinlang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Test](https://github.com/JensvandeWiel/inisaur/actions/workflows/test.yml/badge.svg)](https://github.com/JensvandeWiel/inisaur/actions/workflows/test.yml)
 
 ## Features
 
