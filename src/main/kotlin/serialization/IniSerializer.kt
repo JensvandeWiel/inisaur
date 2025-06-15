@@ -1,10 +1,20 @@
 package serialization
 
+import ArrayType
+import CommaSeparatedArray
+import IndexedArray
 import IniFile
 import Lexer
+import MapEntry
 import Parser
+import Plain
+import RepeatedLineArray
 import Section
 import annotations.*
+import serialization.IniSerializer.deserialize
+import serialization.IniSerializer.deserializeSection
+import serialization.IniSerializer.serialize
+import serialization.IniSerializer.serializeSection
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
@@ -367,6 +377,48 @@ object IniSerializer {
             }
         }
 
+        // Include the contents of ignoredKeys if the object implements WithIgnored
+        if (obj is WithIgnored && obj.ignoredKeys.sections.isNotEmpty()) {
+            for (ignoredSection in obj.ignoredKeys.sections) {
+                // Check if we already have a section with this name
+                val existingSection = sections.find { it.name == ignoredSection.name }
+
+                if (existingSection == null) {
+                    // If the section doesn't exist in the main object, add it as-is
+                    sections.add(ignoredSection)
+                } else {
+                    // If the section exists, we need to merge the entries
+                    // The ignoredSection entries need to be added to the existing section
+                    for (entry in ignoredSection.entries) {
+                        try {
+                            // Try to add the entry to the existing section
+                            // If the key already exists, it will throw an exception, which is fine
+                            // because the main object's properties take precedence
+                            when (entry) {
+                                is Plain -> existingSection.addKey(entry.key, entry.value)
+                                is CommaSeparatedArray -> existingSection.addArrayKey(
+                                    entry.key,
+                                    entry.toList(),
+                                    ArrayType.CommaSeparatedArray
+                                )
+
+                                is RepeatedLineArray -> existingSection.addArrayKey(
+                                    entry.key,
+                                    entry.toList(),
+                                    ArrayType.RepeatedLineArray
+                                )
+
+                                is IndexedArray -> existingSection.addIndexedArrayKey(entry.key, entry.toMap())
+                                is MapEntry -> existingSection.addMapKey(entry.key, entry.toMap())
+                            }
+                        } catch (e: IllegalArgumentException) {
+                            // Ignore if the key already exists - main object's properties take precedence
+                        }
+                    }
+                }
+            }
+        }
+
         return IniFile(sections)
     }
 
@@ -444,10 +496,51 @@ object IniSerializer {
                 continue
             }
 
+            // Skip the ignoredKeys property from WithIgnored interface
+            if (property.name == "ignoredKeys" && WithIgnored::class.java.isAssignableFrom(clazz.java)) {
+                continue
+            }
+
             val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() } ?: property.name
             val value = property.getter.call(obj)
 
             processProperty(property, propertyName, value, section)
+        }
+
+        // Include ignored keys if the section object implements WithIgnored
+        if (obj is WithIgnored && obj.ignoredKeys.sections.isNotEmpty()) {
+            // Find the section in ignoredKeys that has the same name as this section
+            val ignoredSection = obj.ignoredKeys.sections.find { it.name == sectionName }
+
+            if (ignoredSection != null) {
+                // For each entry in the ignored section
+                for (entry in ignoredSection.entries) {
+                    try {
+                        // Try to add the entry to our section
+                        // If the key already exists, it will throw an exception, which is fine
+                        // because the main object's properties take precedence
+                        when (entry) {
+                            is Plain -> section.addKey(entry.key, entry.value)
+                            is CommaSeparatedArray -> section.addArrayKey(
+                                entry.key,
+                                entry.toList(),
+                                ArrayType.CommaSeparatedArray
+                            )
+
+                            is RepeatedLineArray -> section.addArrayKey(
+                                entry.key,
+                                entry.toList(),
+                                ArrayType.RepeatedLineArray
+                            )
+
+                            is IndexedArray -> section.addIndexedArrayKey(entry.key, entry.toMap())
+                            is MapEntry -> section.addMapKey(entry.key, entry.toMap())
+                        }
+                    } catch (e: IllegalArgumentException) {
+                        // Ignore if the key already exists - main object's properties take precedence
+                    }
+                }
+            }
         }
 
         sections.add(section)
@@ -478,6 +571,7 @@ object IniSerializer {
                         val valuesList = value.map { convertToIniValue(it) }
                         section.addArrayKey(propertyName, valuesList, ArrayType.CommaSeparatedArray)
                     }
+
                     ArrayType.RepeatedLineArray -> {
                         val valuesList = value.map { convertToIniValue(it) }
                         section.addArrayKey(propertyName, valuesList, ArrayType.RepeatedLineArray)
@@ -603,6 +697,12 @@ object IniSerializer {
         val parameters = constructor.parameters
         val parameterValues = mutableMapOf<String, Any?>()
 
+        // Keep track of sections we've processed
+        val processedSections = mutableSetOf<String>()
+
+        // Keep track of processed keys for each section
+        val processedKeys = mutableMapOf<String, MutableSet<String>>()
+
         // Process all properties that match constructor parameters
         for (property in clazz.memberProperties) {
             val paramName = property.name
@@ -610,6 +710,11 @@ object IniSerializer {
             // Find matching constructor parameter
             val parameter = parameters.find { it.name == paramName }
                 ?: continue
+
+            // Check if this property is for ignored keys (WithIgnored interface)
+            if (paramName == "ignoredKeys" && WithIgnored::class.java.isAssignableFrom(clazz.java)) {
+                continue  // We'll handle this at the end after we know which sections were processed
+            }
 
             // Check if this property represents a section
             val sectionAnnotation = property.findAnnotation<IniSection>()
@@ -629,8 +734,34 @@ object IniSerializer {
                                 ?: parameterType.simpleName ?: "UnnamedSection"
                         }
 
+                        // Mark this section as processed
+                        processedSections.add(sectionName)
+
                         // Check if section exists in INI file
                         if (iniFile.hasSection(sectionName)) {
+                            val section = iniFile.getSection(sectionName)
+
+                            // Track the keys we process for this section
+                            val sectionProcessedKeys = mutableSetOf<String>()
+                            processedKeys[sectionName] = sectionProcessedKeys
+
+                            // Process all properties that match constructor parameters for this section
+                            for (sectionProperty in parameterType.memberProperties) {
+                                val propertyAnnotation = sectionProperty.findAnnotation<IniProperty>()
+
+                                // Skip ignored properties
+                                if (propertyAnnotation?.ignore == true) {
+                                    continue
+                                }
+
+                                // Get property name from annotation or use property name
+                                val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() }
+                                    ?: sectionProperty.name
+
+                                // Mark this key as processed
+                                sectionProcessedKeys.add(propertyName)
+                            }
+
                             val sectionValue = processIniFileSection(iniFile, sectionName, parameterType)
                             parameterValues[paramName] = sectionValue
                         } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
@@ -657,6 +788,30 @@ object IniSerializer {
                             parameterType.simpleName ?: "UnnamedSection"
                         }
 
+                        // Mark this section as processed
+                        processedSections.add(sectionName)
+
+                        // Track the keys we process for this section
+                        val sectionProcessedKeys = mutableSetOf<String>()
+                        processedKeys[sectionName] = sectionProcessedKeys
+
+                        // Process all properties that match constructor parameters for this section
+                        for (sectionProperty in parameterType.memberProperties) {
+                            val propertyAnnotation = sectionProperty.findAnnotation<IniProperty>()
+
+                            // Skip ignored properties
+                            if (propertyAnnotation?.ignore == true) {
+                                continue
+                            }
+
+                            // Get property name from annotation or use property name
+                            val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() }
+                                ?: sectionProperty.name
+
+                            // Mark this key as processed
+                            sectionProcessedKeys.add(propertyName)
+                        }
+
                         // Check if section exists in INI file
                         if (iniFile.hasSection(sectionName)) {
                             val sectionValue = processIniFileSection(iniFile, sectionName, parameterType)
@@ -673,6 +828,57 @@ object IniSerializer {
                         }
                     }
                 }
+            }
+        }
+
+        // Handle the WithIgnored interface by collecting all unprocessed sections and keys
+        if (WithIgnored::class.java.isAssignableFrom(clazz.java)) {
+            val ignoredParameter = parameters.find { it.name == "ignoredKeys" }
+            if (ignoredParameter != null) {
+                // Create a new IniFile with sections that weren't processed
+                val ignoredSections = mutableListOf<Section>()
+
+                // Add any section that wasn't processed
+                for (section in iniFile.sections) {
+                    if (!processedSections.contains(section.name)) {
+                        ignoredSections.add(section)
+                    } else {
+                        // For sections that were processed, collect any unprocessed keys
+                        val sectionProcessedKeys = processedKeys[section.name] ?: emptySet()
+                        val unprocessedEntries = section.entries.filter { !sectionProcessedKeys.contains(it.key) }
+
+                        if (unprocessedEntries.isNotEmpty()) {
+                            val ignoredSection = Section(section.name)
+
+                            // Add any unprocessed keys to the ignored section
+                            for (entry in unprocessedEntries) {
+                                when (entry) {
+                                    is Plain -> ignoredSection.addKey(entry.key, entry.value)
+                                    is CommaSeparatedArray -> ignoredSection.addArrayKey(
+                                        entry.key,
+                                        entry.toList(),
+                                        ArrayType.CommaSeparatedArray
+                                    )
+                                    is RepeatedLineArray -> ignoredSection.addArrayKey(
+                                        entry.key,
+                                        entry.toList(),
+                                        ArrayType.RepeatedLineArray
+                                    )
+                                    is IndexedArray -> ignoredSection.addIndexedArrayKey(entry.key, entry.toMap())
+                                    is MapEntry -> ignoredSection.addMapKey(entry.key, entry.toMap())
+                                }
+                            }
+
+                            ignoredSections.add(ignoredSection)
+                        }
+                    }
+                }
+
+                // Create the IniFile with ignored sections
+                val ignoredIniFile = IniFile(ignoredSections)
+
+                // Add to parameter values
+                parameterValues["ignoredKeys"] = ignoredIniFile
             }
         }
 
@@ -743,6 +949,9 @@ object IniSerializer {
         val parameters = constructor.parameters
         val parameterValues = mutableMapOf<String, Any?>()
 
+        // Track which keys we've processed
+        val processedKeys = mutableSetOf<String>()
+
         // Process all properties that match constructor parameters
         for (property in clazz.memberProperties) {
             val propertyAnnotation = property.findAnnotation<IniProperty>()
@@ -752,11 +961,19 @@ object IniSerializer {
                 continue
             }
 
+            // Skip the ignoredKeys property from WithIgnored interface - we'll handle it separately
+            if (property.name == "ignoredKeys" && WithIgnored::class.java.isAssignableFrom(clazz.java)) {
+                continue
+            }
+
             val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() } ?: property.name
             val paramName = property.name
 
+            // Track this property as processed
+            processedKeys.add(propertyName)
+
             // Find matching constructor parameter
-            val parameter = parameters.find { it.name == paramName }
+            parameters.find { it.name == paramName }
                 ?: continue
 
             try {
@@ -765,6 +982,45 @@ object IniSerializer {
             } catch (e: Exception) {
                 // If we can't get the value, leave it as default or null
                 continue
+            }
+        }
+
+        // Handle WithIgnored interface - collect any keys that weren't processed
+        // Note: This code block may never execute if T doesn't implement WithIgnored, which is fine
+        if (WithIgnored::class.java.isAssignableFrom(clazz.java)) {
+            val ignoredParameter = parameters.find { it.name == "ignoredKeys" }
+            if (ignoredParameter != null) {
+                // Create a new section with unprocessed keys
+                val ignoredSection = Section(sectionName)
+
+                // Add any unprocessed keys to the ignored section
+                for (entry in section.entries) {
+                    if (!processedKeys.contains(entry.key)) {
+                        when (entry) {
+                            is Plain -> ignoredSection.addKey(entry.key, entry.value)
+                            is CommaSeparatedArray -> ignoredSection.addArrayKey(
+                                entry.key,
+                                entry.toList(),
+                                ArrayType.CommaSeparatedArray
+                            )
+
+                            is RepeatedLineArray -> ignoredSection.addArrayKey(
+                                entry.key,
+                                entry.toList(),
+                                ArrayType.RepeatedLineArray
+                            )
+
+                            is IndexedArray -> ignoredSection.addIndexedArrayKey(entry.key, entry.toMap())
+                            is MapEntry -> ignoredSection.addMapKey(entry.key, entry.toMap())
+                        }
+                    }
+                }
+
+                // Create an IniFile with just the ignored section
+                val ignoredIniFile = IniFile(listOf(ignoredSection))
+
+                // Add to parameter values
+                parameterValues["ignoredKeys"] = ignoredIniFile
             }
         }
 
@@ -904,6 +1160,7 @@ object IniSerializer {
                     @Suppress("UNCHECKED_CAST")
                     processMapValues(value as Map<String, Any?>, forceNullConversion)
                 }
+
                 else -> value
             }
         }
@@ -923,6 +1180,7 @@ object IniSerializer {
                     @Suppress("UNCHECKED_CAST")
                     processMapValues(value as Map<String, Any?>)
                 }
+
                 else -> value
             }
         }
@@ -981,7 +1239,7 @@ object IniSerializer {
                     createEmptyInstance(paramType)
                 } else {
                     // Use appropriate default values for primitive types
-                    when(paramType) {
+                    when (paramType) {
                         String::class -> ""
                         Int::class -> 0
                         Float::class -> 0.0f
