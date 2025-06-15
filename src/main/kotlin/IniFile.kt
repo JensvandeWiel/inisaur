@@ -1,13 +1,18 @@
 import exceptions.InvalidTypeException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
+@Serializable
 class IniFile {
     private val _sections: MutableList<Section>
+    @Transient
     private val mutex = Mutex()
+    @Transient
     private val rwLock = ReentrantReadWriteLock()
 
     constructor(sections: List<Section>) {

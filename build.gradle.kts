@@ -3,6 +3,7 @@ import java.net.URI
 
 plugins {
     kotlin("jvm") version "2.1.20"
+    kotlin("plugin.serialization") version "2.1.20"
     id("org.jetbrains.dokka") version "2.0.0"
     id("maven-publish")
 }
@@ -31,6 +32,7 @@ tasks.withType<DokkaTask>().configureEach {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
     implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
 

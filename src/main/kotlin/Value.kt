@@ -1,3 +1,6 @@
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+
 /**
  * Base class for all value types that can be stored in INI files.
  *
@@ -5,6 +8,7 @@
  * represented in INI files, including strings, integers, floats, booleans,
  * and structured data.
  */
+@Serializable
 sealed class Value
 
 /**
@@ -15,6 +19,7 @@ sealed class Value
  *
  * @property value The string value, which may be null
  */
+@Serializable
 data class StringValue(val value: String?) : Value() {
     override fun toString(): String {
         // if contains special characters, wrap in quotes
@@ -31,6 +36,7 @@ data class StringValue(val value: String?) : Value() {
  *
  * @property value The integer value, which may be null
  */
+@Serializable
 data class IntValue(val value: Int?) : Value() {
     override fun toString(): String {
         return value?.toString() ?: ""
@@ -42,6 +48,7 @@ data class IntValue(val value: Int?) : Value() {
  *
  * @property value The float value, which may be null
  */
+@Serializable
 data class FloatValue(val value: Float?) : Value() {
     override fun toString(): String {
         return value?.toString() ?: ""
@@ -57,6 +64,7 @@ data class FloatValue(val value: Float?) : Value() {
  * @property value The boolean value, which may be null
  * @property capitalized Whether to use capitalized (True/False) or lowercase (true/false) format
  */
+@Serializable
 data class BoolValue(val value: Boolean?, val capitalized: Boolean = true) : Value() {
     override fun toString(): String {
         return when (value) {
@@ -75,6 +83,7 @@ data class BoolValue(val value: Boolean?, val capitalized: Boolean = true) : Val
  *
  * @property fields The map of field names to field values
  */
+@Serializable
 data class StructValue(val fields: Map<String, Value?>) : Value() {
     override fun toString(): String {
         return fields.entries.joinToString(", ", "(", ")") { (key, value) ->
@@ -117,9 +126,9 @@ data class StructValue(val fields: Map<String, Value?>) : Value() {
                     "$k=${formatStructValue(v)}"
                 }
             }
+
             is Value -> value.toString()
             else -> value.toString()
         }
     }
 }
-

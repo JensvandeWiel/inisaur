@@ -1,3 +1,6 @@
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+
 /**
  * Base class for all types of entries in an INI file.
  *
@@ -6,6 +9,7 @@
  *
  * @property key The key name for this entry
  */
+@Serializable
 sealed class Entry {
     abstract val key: String
 }
@@ -18,6 +22,7 @@ sealed class Entry {
  * @property key The key name
  * @property value The associated value
  */
+@Serializable
 data class Plain(override val key: String, val value: Value) : Entry() {
     override fun toString(): String {
         return "$key=$value"
@@ -32,6 +37,7 @@ data class Plain(override val key: String, val value: Value) : Entry() {
  * @property key The key name
  * @property values The list of values
  */
+@Serializable
 data class CommaSeparatedArray(override val key: String, val values: List<Value>) : Entry() {
     override fun toString(): String {
         return toCommaSeparatedString()
@@ -98,6 +104,7 @@ data class CommaSeparatedArray(override val key: String, val values: List<Value>
  * @property key The key name
  * @property values The list of values
  */
+@Serializable
 data class RepeatedLineArray(override val key: String, val values: List<Value>) : Entry() {
     override fun toString(): String {
         return values.joinToString("\n") { "$key=$it" }
@@ -136,6 +143,7 @@ data class RepeatedLineArray(override val key: String, val values: List<Value>) 
  * @property key The base key name (without index)
  * @property indexedValues Map of indices to values
  */
+@Serializable
 data class IndexedArray(override val key: String, val indexedValues: Map<Int, Value>) : Entry() {
     /**
      * Gets the list of values in this indexed array.
@@ -190,6 +198,7 @@ data class IndexedArray(override val key: String, val indexedValues: Map<Int, Va
  * @property key The base key name (without index)
  * @property value Map of string keys to values
  */
+@Serializable
 data class MapEntry(override val key: String, val value: Map<String, Value>) : Entry() {
     override fun toString(): String {
         return value.entries.joinToString("\n") { (k, v) -> "$key[$k]=$v" }
@@ -214,4 +223,3 @@ data class MapEntry(override val key: String, val value: Map<String, Value>) : E
         }
     }
 }
-
