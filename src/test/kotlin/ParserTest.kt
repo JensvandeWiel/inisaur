@@ -25,6 +25,7 @@ class ParserTest {
             ModMap[Event]=Ragnarok
             OverrideNamedEngramEntries=(EngramClassName=EngramEntry_Dino_Aid_X_C,EngramHidden=True)
             NestedStruct=(StructName=NestedStruct,StructValue=(Key1=Value1,Key2=Value2))
+            with.dot=ValueWithDot
         """.trimIndent()
 
         val lexer = Lexer(input)
@@ -64,7 +65,7 @@ class ParserTest {
 
         // Test Mods section
         val mods = iniFile.sections[1]
-        assertEquals(6, mods.entries!!.size)
+        assertEquals(7, mods.entries!!.size)
 
         // Test ModList comma separated array
         val modList = mods.entries[0] as CommaSeparatedArray
@@ -116,6 +117,11 @@ class ParserTest {
         assertEquals(2, innerStruct.size)
         assertEquals("Value1", innerStruct["Key1"].toString())
         assertEquals("Value2", innerStruct["Key2"].toString())
+        // Test with.dot entry
+        val withDotEntry = mods.entries[6] as Plain
+        assertEquals("with.dot", withDotEntry.key)
+        assertTrue(withDotEntry.value is StringValue)
+        assertEquals("ValueWithDot", (withDotEntry.value as StringValue).value)
     }
 
     @Test

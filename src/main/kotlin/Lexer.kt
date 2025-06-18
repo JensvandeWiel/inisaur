@@ -204,7 +204,7 @@ class Lexer(private val input: String) {
         val sb = StringBuilder()
 
         // Read the key name
-        while (currentChar.isLetterOrDigit() || currentChar == '_') {
+        while (currentChar.isLetterOrDigit() || currentChar == '_' || currentChar == '.') {
             sb.append(currentChar)
             advance()
         }
