@@ -197,7 +197,11 @@ class Parser(private val lexer: Lexer) {
             TokenType.VALUE_STRING -> {
                 val value = currentToken.value ?: ""
                 eat(TokenType.VALUE_STRING)
-                StringValue(value)
+                val unescapedValue = value.replace("\\n", "\n")
+                                          .replace("\\r", "\r")
+                                          .replace("\\t", "\t")
+                                          .replace("\\\\", "\\")
+                StringValue(unescapedValue)
             }
             TokenType.VALUE_INTEGER -> {
                 val value = currentToken.value ?: "0"

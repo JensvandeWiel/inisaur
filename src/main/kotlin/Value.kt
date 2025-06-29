@@ -22,11 +22,31 @@ sealed class Value
 @Serializable
 data class StringValue(val value: String?) : Value() {
     override fun toString(): String {
-        // if contains special characters, wrap in quotes
         return when {
             value == null -> ""
-            value.contains(Regex("[_,;=#\\[\\]\\n\\r\\t@#$%^&*()]|\\\\u[0-9a-fA-F]{4}|\\\\.")) -> "\"$value\""
-            else -> value
+            else -> escapeStringForIni(value)
+        }
+    }
+
+    /**
+     * Escapes special characters in strings for INI format.
+     *
+     * This method ensures that strings containing newlines and other special characters
+     * are properly escaped to maintain valid INI format.
+     *
+     * @param value The string value to escape
+     * @return The escaped string suitable for INI representation
+     */
+    private fun escapeStringForIni(value: String): String {
+        val newVal = value
+            .replace("\\", "\\\\")  // Escape backslashes first
+            .replace("\n", "\\n")   // Escape newlines
+            .replace("\r", "\\r")   // Escape carriage returns
+            .replace("\t", "\\t")   // Escape tabs
+
+        return when {
+            newVal.contains(Regex("[_,;=#\\[\\]\\n\\r\\t@#$%^&*()]|\\\\u[0-9a-fA-F]{4}|\\\\.")) -> "\"$newVal\""
+            else -> newVal
         }
     }
 }

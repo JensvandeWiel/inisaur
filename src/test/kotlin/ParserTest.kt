@@ -7,7 +7,7 @@ class ParserTest {
     fun `test parsing basic INI file`() {
         val input = """
             [ServerSettings]
-            ServerName=ARK Server
+            ServerName=ARK\nServer
             MaxPlayers=70
             EnablePvP=True
             DifficultyOffset=0.2
@@ -45,7 +45,7 @@ class ParserTest {
         val serverName = serverSettings.entries!![0] as Plain
         assertEquals("ServerName", serverName.key)
         assertTrue(serverName.value is StringValue)
-        assertEquals("ARK Server", (serverName.value as StringValue).value)
+        assertEquals("ARK\nServer", (serverName.value as StringValue).value)
 
         val maxPlayers = serverSettings.entries[1] as Plain
         assertEquals("MaxPlayers", maxPlayers.key)
