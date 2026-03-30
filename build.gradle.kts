@@ -1,10 +1,7 @@
-import org.jetbrains.dokka.gradle.DokkaTask
-import java.net.URI
-
 plugins {
-    kotlin("jvm") version "2.1.20"
-    kotlin("plugin.serialization") version "2.1.20"
-    id("org.jetbrains.dokka") version "2.0.0"
+    kotlin("jvm") version "2.3.20"
+    kotlin("plugin.serialization") version "2.3.20"
+    id("org.jetbrains.dokka") version "2.2.0"
     id("maven-publish")
 }
 
@@ -15,29 +12,13 @@ repositories {
     mavenCentral()
 }
 
-tasks.withType<DokkaTask>().configureEach {
-    dokkaSourceSets {
-        named("main") {
-            moduleName.set("Inisaur")
-            includes.from("README.md")
-
-            sourceLink {
-                localDirectory.set(file("src/main/kotlin"))
-                remoteUrl.set(URI("https://github.com/JensvandeWiel/inisaur/blob/master/src/main/kotlin").toURL())
-                remoteLineSuffix.set("#L")
-            }
-        }
-    }
-}
-
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
     implementation(kotlin("reflect"))
     testImplementation(kotlin("test"))
 
-    // Add the dokka versioning plugin
-    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:2.0.0")
+    dokkaPlugin("org.jetbrains.dokka:versioning-plugin:2.2.0")
 }
 
 tasks.test {
@@ -50,16 +31,30 @@ kotlin {
 
 val versionString = project.version.toString()
 
-tasks.withType<DokkaTask>().configureEach {
-    pluginsMapConfiguration.set(
-        mapOf(
-            "org.jetbrains.dokka.versioning.VersioningPlugin.version" to versionString,
-            "org.jetbrains.dokka.versioning.VersioningPlugin.olderVersionsDir" to "${project.projectDir}/docs",
-            "org.jetbrains.dokka.versioning.VersioningPlugin.renderVersionsNavigationOnAllPages" to "true"
-        )
-    )
+dokka {
+    moduleName.set("Inisaur")
 
-    outputDirectory.set(buildDir.resolve("dokka"))
+    dokkaSourceSets.main {
+        includes.from("README.md")
+
+        sourceLink {
+            localDirectory.set(file("src/main/kotlin"))
+            remoteUrl("https://github.com/JensvandeWiel/inisaur/blob/master/src/main/kotlin")
+            remoteLineSuffix.set("#L")
+        }
+    }
+
+    dokkaPublications.html {
+        outputDirectory.set(layout.buildDirectory.dir("dokka"))
+    }
+
+    pluginsConfiguration {
+        versioning {
+            version.set(versionString)
+            olderVersionsDir.set(project.projectDir.resolve("docs"))
+            renderVersionsNavigationOnAllPages.set(true)
+        }
+    }
 }
 
 // Create a task to generate a version list in the docs directory
@@ -83,7 +78,7 @@ tasks.register("generateVersionList") {
 }
 
 tasks.register<Copy>("syncDokkaVersionedDocs") {
-    dependsOn("dokkaHtml")
+    dependsOn("dokkaGeneratePublicationHtml")
 
     val versionDir = file("docs/$versionString")
     from(layout.buildDirectory.dir("dokka"))
@@ -97,9 +92,9 @@ tasks.register<Copy>("syncDokkaVersionedDocs") {
 }
 
 val javadocJar by tasks.registering(Jar::class) {
-    dependsOn(tasks.dokkaHtml)
+    dependsOn("dokkaGeneratePublicationHtml")
     archiveClassifier.set("javadoc")
-    from(tasks.dokkaHtml.get().outputDirectory)
+    from(layout.buildDirectory.dir("dokka"))
 }
 
 val sourcesJar by tasks.registering(Jar::class) {
