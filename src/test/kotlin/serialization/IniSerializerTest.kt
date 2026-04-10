@@ -1,6 +1,5 @@
 package serialization
 
-import IniFile
 import annotations.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
@@ -80,11 +79,73 @@ class UnannotatedClass(val name: String)
 @IniSection("TestSection")
 data class TestConfig(val name: String)
 
+@IniSection("DefaultSection")
+data class DefaultedConfig(
+    val name: String = "Fallback",
+    val enabled: Boolean
+)
+
+@IniSection("MixedDefaultSection")
+data class MixedDefaultConfig(
+    val title: String = "Default Title",
+    val count: Int = 7,
+    val enabled: Boolean = true
+)
+
 @IniStruct
 data class Vector3(val x: Float, val y: Float, val z: Float)
 
 @IniStruct
 data class SpawnSettings(val minLevel: Int, val maxLevel: Int, val position: Vector3)
+
+@IniStruct
+data class Vector3WithDefaults(val x: Float = 1f, val y: Float = 2f, val z: Float = 3f)
+
+@IniStruct
+data class SpawnSettingsWithDefaults(
+    val minLevel: Int = 5,
+    val maxLevel: Int = 10,
+    val position: Vector3WithDefaults = Vector3WithDefaults()
+)
+
+@IniSection("DefaultStructSection")
+data class DefaultStructConfig(
+    val settings: SpawnSettingsWithDefaults
+)
+
+@IniSection("PrimitiveDefaults")
+data class PrimitiveDefaultsConfig(
+    val title: String,
+    val count: Int,
+    val enabled: Boolean,
+    val ratio: Float
+)
+
+@IniSection("CollectionDefaults")
+data class CollectionDefaultsConfig(
+    val tags: List<String>,
+    val metadata: Map<String, String>
+)
+
+@IniSection("CollectionMapDefaults")
+data class CollectionMapDefaultsConfig(
+    val tags: List<String> = listOf("alpha", "beta"),
+    val metadata: Map<String, String> = mapOf("hero" to "Player", "enemy" to "Boss")
+)
+
+@IniSection("NullableDefaults")
+data class NullableDefaultsConfig(
+    val title: String?,
+    val tags: List<String>?,
+    val metadata: Map<String, String>?
+)
+
+@IniSection("OptionalNullableDefaults")
+data class OptionalNullableDefaultsConfig(
+    val title: String? = "Optional Title",
+    val tags: List<String>? = listOf("one", "two"),
+    val metadata: Map<String, String>? = mapOf("mode" to "default")
+)
 
 @IniSection("DinoSpawner")
 data class DinoConfig(
@@ -119,6 +180,32 @@ class IniSerializerTest {
             assertTrue(iniContent.contains("name=Test"))
             assertTrue(iniContent.contains("count=42"))
             assertTrue(iniContent.contains("isEnabled=True"))
+        }
+
+        @Test
+        fun `deserialize uses constructor default when field is missing`() {
+            val ini = """
+                [DefaultSection]
+                enabled=True
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<DefaultedConfig>(ini)
+
+            assertEquals("Fallback", config.name)
+            assertTrue(config.enabled)
+        }
+
+        @Test
+        fun `deserialize uses constructor defaults for multiple missing fields`() {
+            val ini = """
+                [MixedDefaultSection]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<MixedDefaultConfig>(ini)
+
+            assertEquals("Default Title", config.title)
+            assertEquals(7, config.count)
+            assertTrue(config.enabled)
         }
 
         @Test
@@ -251,6 +338,145 @@ class IniSerializerTest {
             val iniContent = IniSerializer.serializeSection(config)
 
             assertTrue(iniContent.contains("position=(x=10, y=20, z=30)"))
+        }
+
+        @Test
+        fun `deserialize preserves nested struct defaults when some fields are missing`() {
+            val ini = """
+                [DefaultStructSection]
+                settings=(position=(x=42.0))
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<DefaultStructConfig>(ini)
+
+            assertEquals(5, config.settings.minLevel)
+            assertEquals(10, config.settings.maxLevel)
+            assertEquals(42f, config.settings.position.x)
+            assertEquals(2f, config.settings.position.y)
+            assertEquals(3f, config.settings.position.z)
+        }
+
+        @Test
+        fun `deserialize uses nested struct defaults when struct field is missing`() {
+            val ini = """
+                [DefaultStructSection]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<DefaultStructConfig>(ini)
+
+            assertEquals(5, config.settings.minLevel)
+            assertEquals(10, config.settings.maxLevel)
+            assertEquals(1f, config.settings.position.x)
+            assertEquals(2f, config.settings.position.y)
+            assertEquals(3f, config.settings.position.z)
+        }
+    }
+
+    @Nested
+    inner class DefaultValueTests {
+        @Test
+        fun `deserialize uses primitive default values when fields are missing`() {
+            val ini = """
+                [PrimitiveDefaults]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<PrimitiveDefaultsConfig>(ini)
+
+            assertEquals("", config.title)
+            assertEquals(0, config.count)
+            assertFalse(config.enabled)
+            assertEquals(0f, config.ratio)
+        }
+
+        @Test
+        fun `deserialize uses empty collection and map defaults when fields are missing`() {
+            val ini = """
+                [CollectionDefaults]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<CollectionDefaultsConfig>(ini)
+
+            assertEquals(emptyList<String>(), config.tags)
+            assertEquals(emptyMap<String, String>(), config.metadata)
+        }
+
+        @Test
+        fun `deserialize uses non-empty collection and map defaults when fields are missing`() {
+            val ini = """
+                [CollectionMapDefaults]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<CollectionMapDefaultsConfig>(ini)
+
+            assertEquals(listOf("alpha", "beta"), config.tags)
+            assertEquals(mapOf("hero" to "Player", "enemy" to "Boss"), config.metadata)
+        }
+
+        @Test
+        fun `deserialize keeps provided collection values while defaulting missing map values`() {
+            val ini = """
+                [CollectionMapDefaults]
+                tags=one,two
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<CollectionMapDefaultsConfig>(ini)
+
+            assertEquals(listOf("one", "two"), config.tags)
+            assertEquals(mapOf("hero" to "Player", "enemy" to "Boss"), config.metadata)
+        }
+
+        @Test
+        fun `deserialize converts explicit empty string to null for nullable property`() {
+            val ini = """
+                [NullableDefaults]
+                title=
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<NullableDefaultsConfig>(ini)
+
+            assertNull(config.title)
+            assertNull(config.tags)
+            assertNull(config.metadata)
+        }
+
+        @Test
+        fun `deserialize returns null for nullable fields when fields are missing`() {
+            val ini = """
+                [NullableDefaults]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<NullableDefaultsConfig>(ini)
+
+            assertNull(config.title)
+            assertNull(config.tags)
+            assertNull(config.metadata)
+        }
+
+        @Test
+        fun `deserialize uses optional defaults for nullable fields when fields are missing`() {
+            val ini = """
+                [OptionalNullableDefaults]
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<OptionalNullableDefaultsConfig>(ini)
+
+            assertEquals("Optional Title", config.title)
+            assertEquals(listOf("one", "two"), config.tags)
+            assertEquals(mapOf("mode" to "default"), config.metadata)
+        }
+
+        @Test
+        fun `deserialize uses optional defaults when nullable property is explicitly empty`() {
+            val ini = """
+                [OptionalNullableDefaults]
+                title=
+            """.trimIndent()
+
+            val config = IniSerializer.deserializeSection<OptionalNullableDefaultsConfig>(ini)
+
+            assertNull(config.title)
+            assertEquals(listOf("one", "two"), config.tags)
+            assertEquals(mapOf("mode" to "default"), config.metadata)
         }
     }
 

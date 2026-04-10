@@ -93,6 +93,8 @@ import kotlin.reflect.full.primaryConstructor
  * @see IniStruct
  */
 object IniSerializer {
+    private object MissingValue
+
     /**
      * Serializes an object to an INI file format string.
      *
@@ -884,7 +886,7 @@ object IniSerializer {
 
         // Call constructor with parameter values
         return try {
-            constructor.callBy(parameters.associateWith { parameterValues[it.name] })
+            constructor.callBy(buildCallByArguments(parameters, parameterValues))
         } catch (e: IllegalArgumentException) {
             throw IllegalArgumentException("Failed to create instance of ${clazz.simpleName}: ${e.message}")
         }
@@ -973,12 +975,21 @@ object IniSerializer {
             processedKeys.add(propertyName)
 
             // Find matching constructor parameter
-            parameters.find { it.name == paramName }
+            val parameter = parameters.find { it.name == paramName }
                 ?: continue
 
             try {
                 val value = extractValueFromSection(section, propertyName, property)
-                parameterValues[paramName] = value
+                when (value) {
+                    MissingValue -> {
+                        when {
+                            parameter.isOptional -> Unit
+                            parameter.type.isMarkedNullable -> parameterValues[paramName] = null
+                            else -> parameterValues[paramName] = defaultValueForMissingProperty(property)
+                        }
+                    }
+                    else -> parameterValues[paramName] = value
+                }
             } catch (e: Exception) {
                 // If we can't get the value, leave it as default or null
                 continue
@@ -1024,7 +1035,22 @@ object IniSerializer {
             }
         }
 
-        return constructor.callBy(parameters.associateWith { parameterValues[it.name] })
+        return constructor.callBy(buildCallByArguments(parameters, parameterValues))
+    }
+
+    private fun buildCallByArguments(
+        parameters: List<kotlin.reflect.KParameter>,
+        parameterValues: Map<String, Any?>
+    ): Map<kotlin.reflect.KParameter, Any?> {
+        return parameters.mapNotNull { parameter ->
+            val name = parameter.name ?: return@mapNotNull null
+
+            when {
+                parameterValues.containsKey(name) -> parameter to parameterValues[name]
+                parameter.isOptional -> null
+                else -> parameter to parameterValues[name]
+            }
+        }.toMap()
     }
 
     /**
@@ -1044,6 +1070,10 @@ object IniSerializer {
 
         // Check if this is a required non-null property
         val isNullable = property.returnType.isMarkedNullable
+
+        if (!section.entries.any { it.key == propertyName }) {
+            return MissingValue
+        }
 
         return when {
             // Handle arrays/collections
@@ -1141,6 +1171,21 @@ object IniSerializer {
         }
     }
 
+    private fun defaultValueForMissingProperty(property: KProperty1<*, *>): Any? {
+        val returnType = property.returnType.classifier as? KClass<*> ?: return null
+
+        return when {
+            Collection::class.java.isAssignableFrom(returnType.java) -> emptyList<Any?>()
+            Map::class.java.isAssignableFrom(returnType.java) -> emptyMap<String, Any?>()
+            returnType == Boolean::class -> false
+            returnType == String::class -> ""
+            returnType == Int::class -> 0
+            returnType == Float::class -> 0.0f
+            returnType.hasAnnotation<IniStruct>() -> createEmptyInstance(returnType)
+            else -> null
+        }
+    }
+
     /**
      * Process map values to convert empty strings to nulls for maps that can contain nullable values.
      *
@@ -1219,41 +1264,34 @@ object IniSerializer {
                 if (value is Map<*, *>) {
                     @Suppress("UNCHECKED_CAST")
                     val nestedValue = createStructInstance(parameterType, value as Map<String, Any?>)
-                    parameterValues[paramName] = nestedValue
+                    if (nestedValue != null) {
+                        parameterValues[paramName] = nestedValue
+                    }
                 } else if (!parameter.isOptional && !parameter.type.isMarkedNullable) {
                     // If the parameter is required and non-null, create an empty instance
                     parameterValues[paramName] = createEmptyInstance(parameterType)
                 }
             } else {
-                parameterValues[paramName] = value
-            }
-        }
-
-        // Filter out null values for non-nullable parameters
-        val finalParams = parameters.associateWith { param ->
-            val value = parameterValues[param.name]
-            if (value == null && !param.type.isMarkedNullable && !param.isOptional) {
-                // For non-nullable parameters that have null values, create default instances if possible
-                val paramType = param.type.classifier as? KClass<*>
-                if (paramType != null && paramType.hasAnnotation<IniStruct>()) {
-                    createEmptyInstance(paramType)
-                } else {
-                    // Use appropriate default values for primitive types
-                    when (paramType) {
-                        String::class -> ""
-                        Int::class -> 0
-                        Float::class -> 0.0f
-                        Boolean::class -> false
-                        else -> value
+                if (value != null) {
+                    parameterValues[paramName] = value
+                } else if (!parameter.isOptional) {
+                    parameterValues[paramName] = when {
+                        parameter.type.isMarkedNullable -> null
+                        parameterType == String::class -> ""
+                        parameterType == Int::class -> 0
+                        parameterType == Float::class -> 0.0f
+                        parameterType == Boolean::class -> false
+                        parameterType?.hasAnnotation<IniStruct>() == true -> createEmptyInstance(parameterType)
+                        Collection::class.java.isAssignableFrom(parameterType?.java ?: Any::class.java) -> emptyList<Any>()
+                        Map::class.java.isAssignableFrom(parameterType?.java ?: Any::class.java) -> emptyMap<Any, Any>()
+                        else -> null
                     }
                 }
-            } else {
-                value
             }
         }
 
         return try {
-            constructor.callBy(finalParams)
+            constructor.callBy(buildCallByArguments(parameters, parameterValues))
         } catch (e: IllegalArgumentException) {
             // If we can't construct the object with the given parameters, return null
             null
@@ -1266,31 +1304,35 @@ object IniSerializer {
     private fun <T : Any> createEmptyInstance(clazz: KClass<T>): T? {
         val constructor = clazz.primaryConstructor ?: return null
 
-        // Create a map of parameters with default values or null for optional parameters
-        val paramMap = constructor.parameters.associateWith { param ->
+        val parameterValues = mutableMapOf<String, Any?>()
+
+        for (param in constructor.parameters) {
+            val name = param.name ?: continue
+
             if (param.isOptional) {
-                // Use default value if available
-                null
-            } else if (!param.type.isMarkedNullable) {
-                // For non-nullable types, try to create appropriate default values
-                val paramType = param.type.classifier as? KClass<*>
-                when {
-                    paramType == String::class -> ""
-                    paramType == Int::class -> 0
-                    paramType == Float::class -> 0.0f
-                    paramType == Boolean::class -> false
-                    paramType?.hasAnnotation<IniStruct>() == true -> createEmptyInstance(paramType)
-                    Collection::class.java.isAssignableFrom(paramType?.java ?: Any::class.java) -> emptyList<Any>()
-                    Map::class.java.isAssignableFrom(paramType?.java ?: Any::class.java) -> emptyMap<Any, Any>()
-                    else -> null
-                }
-            } else {
-                null
+                continue
+            }
+
+            if (param.type.isMarkedNullable) {
+                parameterValues[name] = null
+                continue
+            }
+
+            val paramType = param.type.classifier as? KClass<*>
+            parameterValues[name] = when {
+                paramType == String::class -> ""
+                paramType == Int::class -> 0
+                paramType == Float::class -> 0.0f
+                paramType == Boolean::class -> false
+                paramType?.hasAnnotation<IniStruct>() == true -> createEmptyInstance(paramType)
+                Collection::class.java.isAssignableFrom(paramType?.java ?: Any::class.java) -> emptyList<Any>()
+                Map::class.java.isAssignableFrom(paramType?.java ?: Any::class.java) -> emptyMap<Any, Any>()
+                else -> null
             }
         }
 
         return try {
-            constructor.callBy(paramMap)
+            constructor.callBy(buildCallByArguments(constructor.parameters, parameterValues))
         } catch (e: Exception) {
             null
         }

@@ -17,6 +17,10 @@ data class FullConfigWithIgnoredSections(
     override val ignoredKeys: IniFile = IniFile()
 ) : WithIgnored
 
+
+@IniSerializable
+data class EmptyWithIgnored(override val ignoredKeys: IniFile = IniFile()) : WithIgnored
+
 class WithIgnoredTest {
     @Test
     fun `section should collect unknown keys`() {
@@ -170,5 +174,18 @@ class WithIgnoredTest {
         assertEquals(10, structValue["x"])
         assertEquals(20, structValue["y"])
         assertEquals(30, structValue["z"])
+    }
+
+    @Test
+    fun `empty config should retain all keys`() {
+        val ini = """
+            [KnownSection]
+            name=Test
+            value=42
+        """.trimIndent()
+        val config = IniSerializer.deserialize<EmptyWithIgnored>(ini)
+        val serialized = IniSerializer.serialize(config)
+        assertTrue(serialized.contains("name=Test"))
+        assertTrue(serialized.contains("value=42"))
     }
 }
