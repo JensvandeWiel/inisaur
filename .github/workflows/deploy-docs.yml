@@ -34,7 +34,7 @@ jobs:
           sed -i "s/version = \".*\"/version = \"${{ steps.get_version.outputs.VERSION }}\"/" build.gradle.kts
 
       - name: Generate versioned Dokka documentation
-        run: ./gradlew dokkaHtml syncDokkaVersionedDocs
+        run: ./gradlew dokkaGenerateHtml syncDokkaVersionedDocs
 
       - name: Save documentation to temp directory
         run: |
