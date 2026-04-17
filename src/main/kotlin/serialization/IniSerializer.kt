@@ -561,6 +561,11 @@ object IniSerializer {
      */
     private fun processProperty(property: KProperty1<*, *>, propertyName: String, value: Any?, section: Section) {
         val arrayAnnotation = property.findAnnotation<IniArray>()
+        val omitIfNullAnnotation = property.findAnnotation<OmitIfNull>()
+
+        if (value == null && omitIfNullAnnotation != null) {
+            return
+        }
 
         when {
             // Handle arrays/collections - with or without annotation
@@ -637,6 +642,7 @@ object IniSerializer {
 
         for (property in obj::class.memberProperties) {
             val propertyAnnotation = property.findAnnotation<IniProperty>()
+            val omitIfNullAnnotation = property.findAnnotation<OmitIfNull>()
 
             // Skip ignored properties
             if (propertyAnnotation?.ignore == true) {
@@ -645,6 +651,10 @@ object IniSerializer {
 
             val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() } ?: property.name
             val value = property.getter.call(obj)
+
+            if (value == null && omitIfNullAnnotation != null) {
+                continue
+            }
 
             // For nested structs
             val propValue = if (value != null && value::class.hasAnnotation<IniStruct>()) {
