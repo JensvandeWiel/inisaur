@@ -15,16 +15,18 @@ sealed class Value
  * Represents a string value in an INI file.
  *
  * String values are stored as-is unless they contain special characters,
- * in which case they are wrapped in quotes.
+ * in which case they are wrapped in quotes. They can also be forced to be
+ * quoted using the [quoted] property.
  *
  * @property value The string value, which may be null
+ * @property quoted Whether to force the value to be enclosed in quotes
  */
 @Serializable
-data class StringValue(val value: String?) : Value() {
+data class StringValue(val value: String?, val quoted: Boolean = false) : Value() {
     override fun toString(): String {
         return when {
             value == null -> ""
-            else -> escapeStringForIni(value)
+            else -> escapeStringForIni(value, quoted)
         }
     }
 
@@ -35,9 +37,10 @@ data class StringValue(val value: String?) : Value() {
      * are properly escaped to maintain valid INI format.
      *
      * @param value The string value to escape
+     * @param quoted Whether to force the value to be enclosed in quotes
      * @return The escaped string suitable for INI representation
      */
-    private fun escapeStringForIni(value: String): String {
+    private fun escapeStringForIni(value: String, quoted: Boolean): String {
         val newVal = value
             .replace("\\", "\\\\")  // Escape backslashes first
             .replace("\n", "\\n")   // Escape newlines
@@ -45,7 +48,7 @@ data class StringValue(val value: String?) : Value() {
             .replace("\t", "\\t")   // Escape tabs
 
         return when {
-            newVal.contains(Regex("[_,;=#\\[\\]\\n\\r\\t@#$%^&*()]|\\\\u[0-9a-fA-F]{4}|\\\\.")) -> "\"$newVal\""
+            quoted || newVal.contains(Regex("[_,;=#\\[\\]\\n\\r\\t@#$%^&*()]|\\\\u[0-9a-fA-F]{4}|\\\\.")) -> "\"$newVal\""
             else -> newVal
         }
     }

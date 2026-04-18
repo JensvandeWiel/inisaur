@@ -451,8 +451,8 @@ class Section(val name: String) {
      * @throws InvalidTypeException if the key is not a plain (not an array) value.
      */
     @Throws(InvalidTypeException::class)
-    fun setKey(key: String, value: String?) {
-        setKey(key, StringValue(value))
+    fun setKey(key: String, value: String?, quoted: Boolean = false) {
+        setKey(key, StringValue(value, quoted))
     }
 
     /**
@@ -462,8 +462,8 @@ class Section(val name: String) {
      * @throws InvalidTypeException if the key is not a plain (not an array) value.
      */
     @Throws(InvalidTypeException::class)
-    suspend fun setKeyAsync(key: String, value: String?) {
-        setKeyAsync(key, StringValue(value))
+    suspend fun setKeyAsync(key: String, value: String?, quoted: Boolean = false) {
+        setKeyAsync(key, StringValue(value, quoted))
     }
 
     /**
@@ -728,8 +728,8 @@ class Section(val name: String) {
      * @throws InvalidTypeException if the entry is not a valid type.
      */
     @Throws(IllegalArgumentException::class, InvalidTypeException::class)
-    fun addKey(key: String, value: String?) {
-        addKey(key, StringValue(value))
+    fun addKey(key: String, value: String?, quoted: Boolean = false) {
+        addKey(key, StringValue(value, quoted))
     }
 
     /**
@@ -738,8 +738,8 @@ class Section(val name: String) {
      * @throws InvalidTypeException if the entry is not a valid type.
      */
     @Throws(IllegalArgumentException::class, InvalidTypeException::class)
-    suspend fun addKeyAsync(key: String, value: String?) {
-        addKeyAsync(key, StringValue(value))
+    suspend fun addKeyAsync(key: String, value: String?, quoted: Boolean = false) {
+        addKeyAsync(key, StringValue(value, quoted))
     }
 
     /**

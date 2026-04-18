@@ -562,6 +562,7 @@ object IniSerializer {
     private fun processProperty(property: KProperty1<*, *>, propertyName: String, value: Any?, section: Section) {
         val arrayAnnotation = property.findAnnotation<IniArray>()
         val omitIfNullAnnotation = property.findAnnotation<OmitIfNull>()
+        val stringAnnotation = property.findAnnotation<IniString>()
 
         if (value == null && omitIfNullAnnotation != null) {
             return
@@ -617,11 +618,11 @@ object IniSerializer {
             // Handle basic types
             else -> {
                 when (value) {
-                    is String -> section.addKey(propertyName, value)
+                    is String -> section.addKey(propertyName, value, stringAnnotation?.quoted ?: false)
                     is Int -> section.addKey(propertyName, value)
                     is Float -> section.addKey(propertyName, value)
                     is Boolean -> section.addKey(propertyName, value)
-                    null -> section.addKey(propertyName, null as String?)
+                    null -> section.addKey(propertyName, null as String?, stringAnnotation?.quoted ?: false)
                     else -> section.addKey(propertyName, value.toString())
                 }
             }

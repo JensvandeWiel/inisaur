@@ -336,10 +336,10 @@ class IniFile {
      * @throws InvalidTypeException if the key is not a plain value.
      */
     @Throws(InvalidTypeException::class)
-    fun setValue(sectionName: String, key: String, value: String?) {
+    fun setValue(sectionName: String, key: String, value: String?, quoted: Boolean = false) {
         val section = getOrCreateSection(sectionName)
         try {
-            section.setKey(key, value)
+            section.setKey(key, value, quoted)
         } catch (e: InvalidTypeException) {
             throw InvalidTypeException("Failed to set key '$key' in section '$sectionName': ${e.message}")
         }
@@ -350,10 +350,10 @@ class IniFile {
      * @throws InvalidTypeException if the key is not a plain value.
      */
     @Throws(InvalidTypeException::class)
-    suspend fun setValueAsync(sectionName: String, key: String, value: String?) {
+    suspend fun setValueAsync(sectionName: String, key: String, value: String?, quoted: Boolean = false) {
         val section = getOrCreateSectionAsync(sectionName)
         try {
-            section.setKeyAsync(key, value)
+            section.setKeyAsync(key, value, quoted)
         } catch (e: InvalidTypeException) {
             throw InvalidTypeException("Failed to set key '$key' in section '$sectionName': ${e.message}")
         }
@@ -595,10 +595,10 @@ class IniFile {
      * @throws InvalidTypeException if the entry is not a valid type.
      */
     @Throws(IllegalArgumentException::class, InvalidTypeException::class)
-    fun addValue(sectionName: String, key: String, value: String?) {
+    fun addValue(sectionName: String, key: String, value: String?, quoted: Boolean = false) {
         val section = getOrCreateSection(sectionName)
         try {
-            section.addKey(key, value)
+            section.addKey(key, value, quoted)
         } catch (e: IllegalArgumentException) {
             throw IllegalArgumentException("Failed to add key '$key' to section '$sectionName': ${e.message}")
         } catch (e: InvalidTypeException) {
@@ -612,10 +612,10 @@ class IniFile {
      * @throws InvalidTypeException if the entry is not a valid type.
      */
     @Throws(IllegalArgumentException::class, InvalidTypeException::class)
-    suspend fun addValueAsync(sectionName: String, key: String, value: String?) {
+    suspend fun addValueAsync(sectionName: String, key: String, value: String?, quoted: Boolean = false) {
         val section = getOrCreateSectionAsync(sectionName)
         try {
-            section.addKeyAsync(key, value)
+            section.addKeyAsync(key, value, quoted)
         } catch (e: IllegalArgumentException) {
             throw IllegalArgumentException("Failed to add key '$key' to section '$sectionName': ${e.message}")
         } catch (e: InvalidTypeException) {
