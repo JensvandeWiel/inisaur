@@ -394,6 +394,18 @@ class IniSerializerTest {
             val parsed = IniSerializer.deserializeSection<StructArrayConfig>(text)
             assertEquals(config, parsed)
         }
+
+        @Test
+        fun `single repeated struct line deserializes as a one-item struct list`() {
+            val text = """
+                [StructArraySection]
+                positions=(x=7,y=8,z=9)
+            """.trimIndent()
+
+            val parsed = IniSerializer.deserializeSection<StructArrayConfig>(text)
+
+            assertEquals(listOf(Position(7, 8, 9)), parsed.positions)
+        }
     }
 
     @Nested

@@ -1095,17 +1095,12 @@ object IniSerializer {
             Collection::class.java.isAssignableFrom(returnType.java) -> {
                 // If there's no annotation, use CommaSeparatedArray by default (same as in serialization)
                 val arrayType = arrayAnnotation?.arrayType ?: ArrayType.CommaSeparatedArray
+                val elementClass = property.returnType.arguments.firstOrNull()?.type?.classifier as? KClass<*>
 
-                try {
-                    val arrayValues = when (arrayType) {
-                        ArrayType.CommaSeparatedArray -> section.getArrayKey(propertyName)
-                        ArrayType.RepeatedLineArray -> section.getArrayKey(propertyName)
-                    }
-                    val processed = processArrayValues(arrayValues)
-                    // Repeated lines of struct values come back as maps; map them to the element class.
-                    val elementClass = property.returnType.arguments.firstOrNull()?.type?.classifier as? KClass<*>
+                // Repeated lines of struct values come back as maps; map them to the element class.
+                fun List<Any?>.toStructElements(): List<Any?> =
                     if (elementClass != null && elementClass.hasAnnotation<IniStruct>()) {
-                        processed.map { item ->
+                        map { item ->
                             if (item is Map<*, *>) {
                                 createStructInstance(elementClass, item as Map<String, Any?>) ?: item
                             } else {
@@ -1113,8 +1108,15 @@ object IniSerializer {
                             }
                         }
                     } else {
-                        processed
+                        this
                     }
+
+                try {
+                    val arrayValues = when (arrayType) {
+                        ArrayType.CommaSeparatedArray -> section.getArrayKey(propertyName)
+                        ArrayType.RepeatedLineArray -> section.getArrayKey(propertyName)
+                    }
+                    processArrayValues(arrayValues).toStructElements()
                 } catch (e: Exception) {
                     // A one-item array is parsed as a scalar; expose it as a one-item list.
                     // An explicitly empty scalar is an empty array, not [""].
@@ -1123,7 +1125,7 @@ object IniSerializer {
                     when {
                         native == null -> emptyList<Any?>()
                         native is String && native.isBlank() -> emptyList<Any?>()
-                        else -> listOf(native)
+                        else -> listOf(native).toStructElements()
                     }
                 }
             }
