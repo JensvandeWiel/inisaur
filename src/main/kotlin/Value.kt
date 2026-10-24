@@ -155,3 +155,17 @@ data class StructValue(val fields: Map<String, Value?>) : Value() {
         }
     }
 }
+
+/**
+ * Converts this [Value] to its native Kotlin representation.
+ *
+ * Useful when an array is requested from a key that was parsed as a scalar
+ * (for example a single-item comma-separated list).
+ */
+fun Value.toNative(): Any? = when (this) {
+    is StringValue -> value
+    is IntValue -> value
+    is FloatValue -> value
+    is BoolValue -> value
+    is StructValue -> toMap()
+}

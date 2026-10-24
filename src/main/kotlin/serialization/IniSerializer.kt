@@ -10,6 +10,7 @@ import Parser
 import Plain
 import RepeatedLineArray
 import Section
+import toNative
 import annotations.*
 import serialization.IniSerializer.deserialize
 import serialization.IniSerializer.deserializeSection
@@ -1099,7 +1100,15 @@ object IniSerializer {
                     }
                     processArrayValues(arrayValues)
                 } catch (e: Exception) {
-                    emptyList<Any?>()
+                    // A one-item array is parsed as a scalar; expose it as a one-item list.
+                    // An explicitly empty scalar is an empty array, not [""].
+                    val plain = section.entries.firstOrNull { it.key == propertyName } as? Plain
+                    val native = plain?.value?.toNative()
+                    when {
+                        native == null -> emptyList<Any?>()
+                        native is String && native.isBlank() -> emptyList<Any?>()
+                        else -> listOf(native)
+                    }
                 }
             }
 

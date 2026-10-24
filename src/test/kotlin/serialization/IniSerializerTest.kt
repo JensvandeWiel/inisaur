@@ -59,6 +59,12 @@ data class ArrayConfig(
     val repeatedLines: List<String>
 )
 
+@IniSection("IntArraySection")
+data class IntArrayConfig(
+    @IniArray(arrayType = ArrayType.CommaSeparatedArray)
+    val ids: List<Int>
+)
+
 @IniStruct
 data class Position(val x: Int, val y: Int, val z: Int)
 
@@ -327,6 +333,46 @@ class IniSerializerTest {
             assertTrue(lines.any { it == "repeatedLines=first" })
             assertTrue(lines.any { it == "repeatedLines=second" })
             assertTrue(lines.any { it == "repeatedLines=third" })
+        }
+
+        @Test
+        fun `single comma-separated value deserializes as a one-item list`() {
+            val config = IniSerializer.deserializeSection<ArrayConfig>(
+                """
+                [ArraySection]
+                commaSeparated=one
+                repeatedLines=first
+                """.trimIndent()
+            )
+
+            assertEquals(listOf("one"), config.commaSeparated)
+            assertEquals(listOf("first"), config.repeatedLines)
+        }
+
+        @Test
+        fun `single integer value deserializes as a one-item list`() {
+            val config = IniSerializer.deserializeSection<IntArrayConfig>(
+                """
+                [IntArraySection]
+                ids=111
+                """.trimIndent()
+            )
+
+            assertEquals(listOf(111), config.ids)
+        }
+
+        @Test
+        fun `empty scalar value deserializes as an empty list`() {
+            val config = IniSerializer.deserializeSection<ArrayConfig>(
+                """
+                [ArraySection]
+                commaSeparated=
+                repeatedLines=
+                """.trimIndent()
+            )
+
+            assertTrue(config.commaSeparated.isEmpty())
+            assertTrue(config.repeatedLines.isEmpty())
         }
     }
 
