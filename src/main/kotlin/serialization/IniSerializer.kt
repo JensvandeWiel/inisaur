@@ -10,6 +10,7 @@ import Parser
 import Plain
 import RepeatedLineArray
 import Section
+import StringValue
 import toNative
 import annotations.*
 import serialization.IniSerializer.deserialize
@@ -653,16 +654,17 @@ object IniSerializer {
 
             val propertyName = propertyAnnotation?.name?.takeIf { it.isNotEmpty() } ?: property.name
             val value = property.getter.call(obj)
+            val stringAnnotation = property.findAnnotation<IniString>()
 
             if (value == null && omitIfNullAnnotation != null) {
                 continue
             }
 
-            // For nested structs
-            val propValue = if (value != null && value::class.hasAnnotation<IniStruct>()) {
-                convertObjectToStructMap(value)
-            } else {
-                value
+            // For nested structs and explicitly quoted strings
+            val propValue = when {
+                value is String && stringAnnotation?.quoted == true -> StringValue(value, true)
+                value != null && value::class.hasAnnotation<IniStruct>() -> convertObjectToStructMap(value)
+                else -> value
             }
 
             result[propertyName] = propValue

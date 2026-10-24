@@ -74,6 +74,19 @@ data class StructArrayConfig(
 @IniStruct
 data class Position(val x: Int, val y: Int, val z: Int)
 
+@IniStruct
+data class QuotedStruct(
+    @IniProperty("Class")
+    @IniString(quoted = true)
+    val clazz: String = "",
+)
+
+@IniSection("QuotedStructSection")
+data class QuotedStructConfig(
+    @IniProperty("Entry")
+    val entry: QuotedStruct = QuotedStruct(),
+)
+
 @IniSection("EntitySection")
 data class EntityConfig(
     val name: String,
@@ -447,6 +460,22 @@ class IniSerializerTest {
             assertEquals(1f, config.settings.position.x)
             assertEquals(2f, config.settings.position.y)
             assertEquals(3f, config.settings.position.z)
+        }
+
+        @Test
+        fun `IniString forces quotes inside struct values`() {
+            val text = IniSerializer.serializeSection(
+                QuotedStructConfig(QuotedStruct(clazz = "")),
+            )
+
+            assertTrue(text.contains("Entry=(Class=\"\")"))
+            assertEquals(QuotedStruct(""), IniSerializer.deserializeSection<QuotedStructConfig>(text).entry)
+
+            val quotedText = IniSerializer.serializeSection(
+                QuotedStructConfig(QuotedStruct(clazz = "Rex")),
+            )
+
+            assertTrue(quotedText.contains("Entry=(Class=\"Rex\")"))
         }
     }
 
