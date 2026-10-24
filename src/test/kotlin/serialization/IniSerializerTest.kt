@@ -1,4 +1,4 @@
-package serialization
+﻿package serialization
 
 import annotations.*
 import org.junit.jupiter.api.Assertions.*
@@ -63,6 +63,12 @@ data class ArrayConfig(
 data class IntArrayConfig(
     @IniArray(arrayType = ArrayType.CommaSeparatedArray)
     val ids: List<Int>
+)
+
+@IniSection("StructArraySection")
+data class StructArrayConfig(
+    @IniArray(arrayType = ArrayType.RepeatedLineArray)
+    val positions: List<Position>
 )
 
 @IniStruct
@@ -374,6 +380,20 @@ class IniSerializerTest {
             assertTrue(config.commaSeparated.isEmpty())
             assertTrue(config.repeatedLines.isEmpty())
         }
+
+        @Test
+        fun `repeated struct lines deserialize to struct objects`() {
+            val config = StructArrayConfig(
+                positions = listOf(Position(1, 2, 3), Position(4, 5, 6))
+            )
+
+            val text = IniSerializer.serializeSection(config)
+
+            assertTrue(text.contains("positions=(x=1,y=2,z=3)"))
+
+            val parsed = IniSerializer.deserializeSection<StructArrayConfig>(text)
+            assertEquals(config, parsed)
+        }
     }
 
     @Nested
@@ -383,7 +403,7 @@ class IniSerializerTest {
             val config = EntityConfig("Player", Position(10, 20, 30))
             val iniContent = IniSerializer.serializeSection(config)
 
-            assertTrue(iniContent.contains("position=(x=10, y=20, z=30)"))
+            assertTrue(iniContent.contains("position=(x=10,y=20,z=30)"))
         }
 
         @Test
@@ -611,7 +631,7 @@ class IniSerializerTest {
             assertTrue(iniContent.contains("[DinoSpawner]"))
             assertTrue(iniContent.contains("name=T-Rex"))
             assertTrue(iniContent.contains("allowedBiomes=Forest,Mountain,Volcano"))
-            assertTrue(iniContent.contains("settings=(maxLevel=150, minLevel=10, position=(x=100.0, y=200.0, z=50.0))"))
+            assertTrue(iniContent.contains("settings=(maxLevel=150,minLevel=10,position=(x=100.0,y=200.0,z=50.0))"))
 
             assertTrue(iniContent.contains("[ItemDrops]"))
             assertTrue(iniContent.contains("dropTables[Common]=0.7"))
@@ -639,3 +659,4 @@ class IniSerializerTest {
         }
     }
 }
+

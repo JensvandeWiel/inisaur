@@ -1,4 +1,4 @@
-import exceptions.InvalidTypeException
+﻿import exceptions.InvalidTypeException
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -348,7 +348,7 @@ class SectionTest {
         assertTrue(sectionString.contains("IntKey=42"))
         assertTrue(sectionString.contains("FloatKey=3.14"))
         assertTrue(sectionString.contains("BoolKey=True"))
-        assertTrue(sectionString.contains("StructKey=(Key1=Value1, Key2=42)"))
+        assertTrue(sectionString.contains("StructKey=(Key1=Value1,Key2=42)"))
         assertTrue(sectionString.contains("ArrayKey=value1,value2,value3"))
         assertTrue(sectionString.contains("IndexedKey[0]=value0"))
         assertTrue(sectionString.contains("IndexedKey[2]=value2"))
@@ -356,3 +356,4 @@ class SectionTest {
         assertTrue(sectionString.contains("MapKey[SubKey2]=Value2"))
     }
 }
+

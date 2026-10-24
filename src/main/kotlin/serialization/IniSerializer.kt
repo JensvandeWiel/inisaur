@@ -678,11 +678,14 @@ object IniSerializer {
      * @return The converted value suitable for INI representation
      */
     private fun convertToIniValue(value: Any?): Any? {
-        return when (value) {
-            null -> null
-            is String, is Int, is Float, is Boolean -> value
-            value::class.hasAnnotation<IniStruct>() -> convertObjectToStructMap(value)
-            else -> value.toString()
+        return if (value == null) {
+            null
+        } else if (value is String || value is Int || value is Float || value is Boolean) {
+            value
+        } else if (value::class.hasAnnotation<IniStruct>()) {
+            convertObjectToStructMap(value)
+        } else {
+            value.toString()
         }
     }
 
@@ -1098,7 +1101,20 @@ object IniSerializer {
                         ArrayType.CommaSeparatedArray -> section.getArrayKey(propertyName)
                         ArrayType.RepeatedLineArray -> section.getArrayKey(propertyName)
                     }
-                    processArrayValues(arrayValues)
+                    val processed = processArrayValues(arrayValues)
+                    // Repeated lines of struct values come back as maps; map them to the element class.
+                    val elementClass = property.returnType.arguments.firstOrNull()?.type?.classifier as? KClass<*>
+                    if (elementClass != null && elementClass.hasAnnotation<IniStruct>()) {
+                        processed.map { item ->
+                            if (item is Map<*, *>) {
+                                createStructInstance(elementClass, item as Map<String, Any?>) ?: item
+                            } else {
+                                item
+                            }
+                        }
+                    } else {
+                        processed
+                    }
                 } catch (e: Exception) {
                     // A one-item array is parsed as a scalar; expose it as a one-item list.
                     // An explicitly empty scalar is an empty array, not [""].

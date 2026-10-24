@@ -1,4 +1,4 @@
-package serialization
+﻿package serialization
 
 import annotations.*
 import org.junit.jupiter.api.Assertions.*
@@ -65,7 +65,8 @@ class OmitIfNullTest {
         val config = StructOmitConfig(OmitStruct("test", "some details"))
         val iniContent = IniSerializer.serializeSection(config)
         
-        assertTrue(iniContent.contains("struct=(details=some details, name=test)") || 
+        assertTrue(iniContent.contains("struct=(details=some details,name=test)") || 
                    iniContent.contains("struct=(name=test, details=some details)"))
     }
 }
+

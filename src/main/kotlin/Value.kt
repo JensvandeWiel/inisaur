@@ -109,7 +109,7 @@ data class BoolValue(val value: Boolean?, val capitalized: Boolean = true) : Val
 @Serializable
 data class StructValue(val fields: Map<String, Value?>) : Value() {
     override fun toString(): String {
-        return fields.entries.joinToString(", ", "(", ")") { (key, value) ->
+        return fields.entries.joinToString(",", "(", ")") { (key, value) ->
             "$key=${formatStructValue(value)}"
         }
     }
@@ -145,7 +145,7 @@ data class StructValue(val fields: Map<String, Value?>) : Value() {
             null -> ""
             is Map<*, *> -> {
                 @Suppress("UNCHECKED_CAST")
-                (value as Map<String, Any?>).entries.joinToString(", ", "(", ")") { (k, v) ->
+                (value as Map<String, Any?>).entries.joinToString(",", "(", ")") { (k, v) ->
                     "$k=${formatStructValue(v)}"
                 }
             }

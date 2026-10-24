@@ -1,4 +1,4 @@
-import org.junit.jupiter.api.Test
+﻿import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 
 class ParserTest {
@@ -277,8 +277,8 @@ Key[0]=
 Key[2]=64
 ModMap[Main]=Valguero
 ModMap[Event]=Ragnarok
-OverrideNamedEngramEntries=(EngramClassName="EngramEntry_Dino_Aid_X_C", EngramHidden=True)
-NestedStruct=(StructName=NestedStruct, StructValue=(Key1=Value1, Key2=Value2))
+OverrideNamedEngramEntries=(EngramClassName="EngramEntry_Dino_Aid_X_C",EngramHidden=True)
+NestedStruct=(StructName=NestedStruct,StructValue=(Key1=Value1,Key2=Value2))
         """.trimIndent()
 
         val lexer = Lexer(input)
@@ -292,4 +292,5 @@ NestedStruct=(StructName=NestedStruct, StructValue=(Key1=Value1, Key2=Value2))
         assertEquals(input, iniString.trim())
     }
 }
+
 
