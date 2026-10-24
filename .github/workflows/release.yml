@@ -1,8 +1,8 @@
 name: Release
 
 on:
-  release:
-    types: [created]
+  push:
+    tags: ['v*']
 
 # Add permissions needed for release creation and package publishing
 permissions:
